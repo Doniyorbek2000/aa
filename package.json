@@ -1,0 +1,23 @@
+{
+  "name": "webpul",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "db:generate": "pnpm --filter @webpul/db generate",
+    "db:migrate": "pnpm --filter @webpul/db migrate:dev",
+    "db:deploy": "pnpm --filter @webpul/db migrate:deploy",
+    "db:check": "pnpm --filter @webpul/db check"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2"
+  }
+}

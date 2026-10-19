@@ -1,0 +1,2 @@
+# LF everywhere: Prisma checksums migration.sql bytes, so CRLF on Windows would break deploys.
+* text=auto eol=lf
