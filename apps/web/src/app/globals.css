@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* Design tokens (docs/07_SEO_UX_ANALITIKA.md §2.2). Components use only these, never raw colors. */
+:root {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --fg: #0f172a;
+  --fg-muted: #475569;
+  --ink: #0f172a;
+  --ink-fg: #ffffff;
+  --focus: #2563eb;
+  --imlo: #7c3aed;
+  --valyuta: #059669;
+  --biznes: #2563eb;
+  --narxlar: #ea580c;
+  --warning: #b45309;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0b1120;
+    --surface: #111827;
+    --border: #1f2937;
+    --fg: #f1f5f9;
+    --fg-muted: #94a3b8;
+    --ink: #f1f5f9;
+    --ink-fg: #0b1120;
+    --focus: #60a5fa;
+    --imlo: #a78bfa;
+    --valyuta: #34d399;
+    --biznes: #60a5fa;
+    --narxlar: #fb923c;
+    --warning: #fbbf24;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1120;
+  --surface: #111827;
+  --border: #1f2937;
+  --fg: #f1f5f9;
+  --fg-muted: #94a3b8;
+  --ink: #f1f5f9;
+  --ink-fg: #0b1120;
+  --focus: #60a5fa;
+  --imlo: #a78bfa;
+  --valyuta: #34d399;
+  --biznes: #60a5fa;
+  --narxlar: #fb923c;
+  --warning: #fbbf24;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-ink: var(--ink);
+  --color-ink-fg: var(--ink-fg);
+  --color-imlo: var(--imlo);
+  --color-valyuta: var(--valyuta);
+  --color-biznes: var(--biznes);
+  --color-narxlar: var(--narxlar);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --radius-input: 6px;
+  --radius-card: 10px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

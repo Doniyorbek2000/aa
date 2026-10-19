@@ -9,6 +9,9 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "dev:web": "pnpm --filter @webpul/web dev",
+    "build:web": "pnpm --filter @webpul/web build",
     "db:generate": "pnpm --filter @webpul/db generate",
     "db:migrate": "pnpm --filter @webpul/db migrate:dev",
     "db:deploy": "pnpm --filter @webpul/db migrate:deploy",

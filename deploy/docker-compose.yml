@@ -1,0 +1,20 @@
+# Production web on the shared server (/opt/webpul). Exposed only through the shared Caddy
+# (network "proxy" = nurbozor_default), which proxies a12.uz -> webpul-web:3000.
+name: webpul
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: https://a12.uz
+    restart: unless-stopped
+    networks:
+      proxy:
+        aliases: [webpul-web]
+
+networks:
+  proxy:
+    external: true
+    name: nurbozor_default
