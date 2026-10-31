@@ -356,7 +356,7 @@ export function LiveTryOnModal({
         return off.toDataURL('image/jpeg', 0.86);
       }
     }
-    return 'https://a12.uz/assets/hero-tryon-poster.jpg';
+    return 'https://a12.uz/tryon_assets/person_demo.jpg';
   }, []);
 
   const runOpenSourceNeuralTryOn = useCallback(
@@ -480,10 +480,12 @@ export function LiveTryOnModal({
       } else if (fbVid && fbVid.readyState >= 2) {
         const vw = fbVid.videoWidth || 1280;
         const vh = fbVid.videoHeight || 720;
-        const scale = Math.max(cw / vw, ch / vh);
-        const dw = vw * scale;
-        const dh = vh * scale;
-        ctx.drawImage(fbVid, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+        // Crop cleanly to the live camera person region of the demo video
+        const sx = vw * 0.635;
+        const sy = vh * 0.40;
+        const sw = vw * 0.35;
+        const sh = vh * 0.47;
+        ctx.drawImage(fbVid, sx, sy, sw, sh, 0, 0, cw, ch);
       }
 
       // Update body pose every 2nd frame for ultra-smooth 30 FPS performance
