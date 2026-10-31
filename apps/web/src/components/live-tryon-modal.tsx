@@ -13,7 +13,20 @@ export const DEFAULT_GARMENTS = [
   '/tryon_assets/garment4.png',
 ];
 
-export type OpenSourceEngineId = 'a12-pose-mesh' | 'idm-vton' | 'cat-vton' | 'oot-diffusion';
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(new Error('Could not read the selected image.'));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read the selected image.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export type OpenSourceEngineId = 'a12-pose-mesh' | 'leffa-vton';
+type LeffaGarmentType = 'upper_body' | 'lower_body' | 'dresses';
 
 export function BrandWordmark({ small = false }: { small?: boolean }) {
   return (
@@ -274,14 +287,17 @@ export function LiveTryOnModal({
   const { t } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [connecting, setConnecting] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [statusText, setStatusText] = useState<string>('');
   const [garmentList, setGarmentList] = useState<string[]>(DEFAULT_GARMENTS);
   const [selectedGarment, setSelectedGarment] = useState<string | null>(null);
+  const [garmentType, setGarmentType] = useState<LeffaGarmentType>('upper_body');
   const [garmentsApplied, setGarmentsApplied] = useState(0);
   const [thumbsVisible, setThumbsVisible] = useState<boolean[]>([false, false, false, false]);
   const [dragOver, setDragOver] = useState(false);
   const [activeModel, setActiveModel] = useState<OpenSourceEngineId>('a12-pose-mesh');
   const [hdNeuralActive, setHdNeuralActive] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
   const [neuralResultUrl, setNeuralResultUrl] = useState<string | null>(null);
 
   const camVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -337,7 +353,7 @@ export function LiveTryOnModal({
     }
   }, []);
 
-  const captureCleanPersonFrame = useCallback((): string => {
+  const captureCleanPersonFrame = useCallback((): string | null => {
     const camVid = camVideoRef.current;
     if (camVid && camVid.readyState >= 2 && streamRef.current) {
       const off = document.createElement('canvas');
@@ -356,12 +372,14 @@ export function LiveTryOnModal({
         return off.toDataURL('image/jpeg', 0.86);
       }
     }
-    return 'https://a12.uz/tryon_assets/person_demo.jpg';
+    return null;
   }, []);
 
   const runOpenSourceNeuralTryOn = useCallback(
     async (modelId: OpenSourceEngineId, garmentOverride?: string) => {
+      if (modelId === 'leffa-vton' && !window.confirm(t.leffaPrivacyNotice)) return;
       setActiveModel(modelId);
+      setModelError(null);
       if (modelId === 'a12-pose-mesh') {
         setHdNeuralActive(false);
         setNeuralResultUrl(null);
@@ -375,14 +393,11 @@ export function LiveTryOnModal({
       }
 
       setHdNeuralActive(true);
-      setStatusText(
-        modelId === 'idm-vton'
-          ? 'IDM-VTON (Hugging Face GPU)…'
-          : 'OOTDiffusion HD (Hugging Face GPU)…'
-      );
+      setStatusText('Leffa AI (Hugging Face GPU)…');
 
       try {
         const personFrame = captureCleanPersonFrame();
+        if (!personFrame) throw new Error('The live camera is not active.');
         const res = await fetch('/api/tryon', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -391,27 +406,29 @@ export function LiveTryOnModal({
             modelId,
             personFrame,
             garmentImage: targetGarment,
+            garmentType,
           }),
         });
-        if (res.ok) {
-          const data = (await res.json()) as { resultImage?: string | null };
-          if (data.resultImage) {
-            setNeuralResultUrl(data.resultImage);
-            setGarmentsApplied((c) => c + 1);
-          }
-        }
+        if (!res.ok) throw new Error('The AI try-on service is unavailable.');
+        const data = (await res.json()) as { resultImage?: string | null };
+        if (!data.resultImage) throw new Error('The AI try-on service returned no image.');
+        setNeuralResultUrl(data.resultImage);
+        setGarmentsApplied((c) => c + 1);
       } catch {
-        // Fallback to real-time HD neural cloth shader seamlessly
+        setActiveModel('a12-pose-mesh');
+        setHdNeuralActive(false);
+        setModelError(t.aiTryOnError);
       } finally {
         setStatusText('');
       }
     },
-    [captureCleanPersonFrame, selectedGarment]
+    [captureCleanPersonFrame, garmentType, selectedGarment, t.aiTryOnError, t.leffaPrivacyNotice]
   );
 
   const applyGarment = useCallback(
     (url: string) => {
       setSelectedGarment(url);
+      setModelError(null);
       setNeuralResultUrl(null);
       setStatusText(t.dressingStatus);
 
@@ -520,38 +537,52 @@ export function LiveTryOnModal({
   const startExperience = useCallback(async () => {
     if (connecting) return;
     setConnecting(true);
+    setCameraError(null);
     setStatusText(t.connectingStudio);
 
     try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
-        streamRef.current = mediaStream;
-        if (camVideoRef.current) {
-          camVideoRef.current.srcObject = mediaStream;
-          await camVideoRef.current.play().catch(() => {});
-        }
-      } else if (fallbackVideoRef.current) {
-        await fallbackVideoRef.current.play().catch(() => {});
+      if (!window.isSecureContext) {
+        setCameraError(t.cameraSecureContextError);
+        setStatusText('');
+        return;
       }
-    } catch {
-      // Fallback to demo video stream if user has no webcam or denies permission
-      if (fallbackVideoRef.current) {
-        await fallbackVideoRef.current.play().catch(() => {});
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('camera-unavailable');
       }
-    } finally {
-      setConnecting(false);
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      const video = camVideoRef.current;
+      if (!video) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        throw new Error('camera-unavailable');
+      }
+      streamRef.current = mediaStream;
+      video.srcObject = mediaStream;
+      await video.play();
+
       setStep(2);
       revealGarments(garmentList.length);
       startRenderLoop();
-      setTimeout(() => {
+      window.setTimeout(() => {
         setStatusText('');
-        if (initialGarmentUrl) {
-          applyGarment(initialGarmentUrl);
-        }
+        if (initialGarmentUrl) applyGarment(initialGarmentUrl);
       }, 420);
+    } catch (error) {
+      stopCameraAndLoop();
+      const errorName = error instanceof DOMException ? error.name : '';
+      setCameraError(
+        errorName === 'NotAllowedError' || errorName === 'SecurityError'
+          ? t.cameraPermissionError
+          : errorName === 'NotFoundError' || errorName === 'OverconstrainedError'
+            ? t.cameraNotFoundError
+            : t.cameraUnavailableError
+      );
+      setStatusText('');
+    } finally {
+      setConnecting(false);
     }
   }, [
     applyGarment,
@@ -560,6 +591,11 @@ export function LiveTryOnModal({
     initialGarmentUrl,
     revealGarments,
     startRenderLoop,
+    stopCameraAndLoop,
+    t.cameraNotFoundError,
+    t.cameraPermissionError,
+    t.cameraSecureContextError,
+    t.cameraUnavailableError,
     t.connectingStudio,
   ]);
 
@@ -568,6 +604,7 @@ export function LiveTryOnModal({
       stopCameraAndLoop();
       setStep(1);
       setConnecting(false);
+      setCameraError(null);
       setSelectedGarment(null);
       setNeuralResultUrl(null);
       setGarmentsApplied(0);
@@ -609,10 +646,11 @@ export function LiveTryOnModal({
   const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
-    const objUrl = URL.createObjectURL(file);
-    setGarmentList((prev) => [objUrl, ...prev.slice(0, 5)]);
-    setThumbsVisible((prev) => [true, ...prev]);
-    applyGarment(objUrl);
+    void readFileAsDataUrl(file).then((dataUrl) => {
+      setGarmentList((prev) => [dataUrl, ...prev.slice(0, 5)]);
+      setThumbsVisible((prev) => [true, ...prev]);
+      applyGarment(dataUrl);
+    });
   };
 
   return (
@@ -663,6 +701,11 @@ export function LiveTryOnModal({
             >
               {connecting ? t.startingCamera : t.enableCamera}
             </button>
+            {cameraError && (
+              <p className="camera-error" role="alert">
+                {cameraError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -692,9 +735,8 @@ export function LiveTryOnModal({
             <div style={{ display: 'inline-flex', gap: '6px', flexWrap: 'wrap' }}>
               {(
                 [
-                  { id: 'a12-pose-mesh', label: '⚡ A12 Pose-Mesh 30 FPS' },
-                  { id: 'idm-vton', label: '✨ IDM-VTON (HF GPU)' },
-                  { id: 'oot-diffusion', label: '✨ OOTDiffusion HD (HF GPU)' },
+                  { id: 'a12-pose-mesh', label: '⚡ A12 Live Preview' },
+                  { id: 'leffa-vton', label: '✨ Leffa AI · Hugging Face' },
                 ] as const
               ).map((m) => {
                 const isActive = activeModel === m.id;
@@ -722,6 +764,22 @@ export function LiveTryOnModal({
             </div>
 
             <div>
+              <label
+                htmlFor="leffa-garment-type"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', marginRight: '8px', fontSize: '11.5px' }}
+              >
+                {t.garmentTypeLabel}
+                <select
+                  id="leffa-garment-type"
+                  value={garmentType}
+                  onChange={(event) => setGarmentType(event.target.value as LeffaGarmentType)}
+                  style={{ padding: '5px 8px', borderRadius: '8px', border: '1px solid rgba(23,4,4,0.2)', background: '#fff', color: '#170404', font: 'inherit' }}
+                >
+                  <option value="upper_body">{t.garmentTops}</option>
+                  <option value="lower_body">{t.garmentBottoms}</option>
+                  <option value="dresses">{t.garmentOnePieces}</option>
+                </select>
+              </label>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -792,9 +850,10 @@ export function LiveTryOnModal({
                   }
                   const file = e.dataTransfer.files?.[0];
                   if (file && file.type.startsWith('image/')) {
-                    const objUrl = URL.createObjectURL(file);
-                    setGarmentList((prev) => [objUrl, ...prev.slice(0, 5)]);
-                    applyGarment(objUrl);
+                    void readFileAsDataUrl(file).then((dataUrl) => {
+                      setGarmentList((prev) => [dataUrl, ...prev.slice(0, 5)]);
+                      applyGarment(dataUrl);
+                    });
                   }
                 }}
               >
@@ -834,8 +893,8 @@ export function LiveTryOnModal({
                     }}
                   />
                 )}
-                <div className={`t-status ${statusText ? '' : 'hidden'}`} id="t-status">
-                  {statusText}
+                <div className={`t-status ${statusText || modelError ? '' : 'hidden'}`} id="t-status">
+                  {modelError ?? statusText}
                 </div>
               </div>
             </div>

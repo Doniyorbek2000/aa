@@ -1,8 +1,8 @@
-# A12 Anywear AI — Real-Time 30 FPS Virtual Try-On Platform (Web • iOS • Android • Extension)
+# A12 Anywear — Web Camera Preview and AI Try-On Prototype
 
 ![A12 Logo](./logo.png)
 
-**A12 Anywear** (`anywear.decart.ai` arxitekturasi va funksionaliga to‘liq mos) — real vaqt rejimida (30 FPS video tezligida) ishlovchi sun’iy intellekt virtual kiyib ko‘rish studiyasi, raqamli garderob hamda **Web + iOS + Android + Brauzer kengaytmasi** kross-platforma monorepo ekotizimi.
+**A12 Anywear** — web-first virtual kiyib ko‘rish prototipi. Hozirgi web oqimi kamerani brauzerda ko‘rsatadi va kiyimni lokal canvas overlay sifatida joylaydi. Alohida Leffa AI amali kamera kadridan bitta surat yaratadi; bu 30 FPS video generatsiyasi emas. Mobil ilova va brauzer kengaytmasi papkalari hozircha prototip darajasida.
 
 ---
 
@@ -15,41 +15,46 @@ webpul/
 │   └── shared-core/                  # @webpul/shared-core (Web, iOS va Android uchun umumiy yadro)
 │       └── src/index.ts              # Kiyim modellari, URL parser, 17-nuqtali poza va fizika tiplari
 ├── apps/
-│   ├── web/                          # Next.js 16 + React 19 Jonli AI Studiya (Live Mirror)
+│   ├── web/                          # Next.js 16 + React 19 web kamera va AI demo
 │   │   ├── public/logo-mark.png      # Shaffof A12 logotip belgisi
 │   │   └── src/
 │   │       ├── app/                  # Asosiy sahifa va /api/tryon REST endpointi
-│   │       ├── components/           # 30 FPS Neyron Canvas, iOS/Android Simulyator, E-Commerce SDK
+│   │       ├── components/           # Kamera preview va virtual try-on oynasi
 │   │       └── lib/                  # UZ / EN / RU ko‘p tilli lug‘at va testlar
-│   ├── mobile/                       # Android va iOS mobil ilovasi (React Native + Expo + WebRTC)
+│   ├── mobile/                       # React Native / Expo prototipi; to‘liq UI va stream hali yo‘q
 │   │   ├── app.json                  # iOS (ai.a12.anywear) va Android konfiguratsiyasi
 │   │   ├── App.tsx                   # Mobil kamera, Share-Sheet URL qabul qiluvchi va Garderob
 │   │   └── src/services/
-│   │       └── webrtcLucyStream.ts   # 38ms WebRTC + Apple CoreML / Android NNAPI striming klienti
-│   └── extension/                    # Chrome / Edge Universal Drag-and-Drop kengaytmasi
+│   │       └── webrtcLucyStream.ts   # WebSocket demo klienti; WebRTC video stream emas
+│   └── extension/                    # Chrome extension prototipi
 │       ├── manifest.json             # Manifest V3 konfiguratsiyasi
-│       └── content-script.js         # Onlayn do‘konlardan rasmlarni to‘g‘ridan-to‘g‘ri tortib olish
+│       └── content-script.js         # Drag ma’lumotini belgilaydi; yakuniy widget oqimi hali ulanmagan
 ```
 
 ---
 
 ## Asosiy Imkoniyatlar
 
-1. **Jonli 30 FPS AI Virtual Kiyib Ko‘rish (`Live AI Studio`)**
-   - **Jonli Veb-Kamera (`getUserMedia`)** hamda **30 FPS Interaktiv AI Podium Modeli** (`Podium Yurishi`, `360° Aylanish`, `Kursor bilan Tana Boshqaruvi`).
-   - **Real-Vaqt Mato Fizikasi (`Lucy V-TON`)**: Ipak (`silk`), binoiy jun (`wool`), charm (`leather`), paxta (`cotton`) va `techwear` matolarining shamol, tana burilishi va yorug‘likka moslashuvi.
-   - **Oldin / Keyin (`Split-Screen Wipe`)**: Asl tasvir va AI kiyib ko‘rish natijasini jonli vertikal lazer chizig‘i orqali solishtirish.
-   - **Suratga olish (`.PNG` Lookbook)** va **Video yozib olish (`.WEBM` 30 FPS MediaRecorder)**.
+1. **Web kamera preview va AI surat**
+   - `getUserMedia` haqiqiy kamerani ochadi; kamera ishlamasa demo video bilan almashtirilmaydi.
+   - Lokal canvas preview kiyim rasmini tana ustiga taxminan joylaydi; bu pose modeli yoki generative AI биш.
+   - `Leffa AI · Hugging Face` tugmasi bosilganda, foydalanuvchi tasdiqlashidan so‘ng kamera kadri va kiyim rasmi Hugging Face Space’ga yuboriladi. Natija bitta surat; live video emas.
+   - Leffa хувцасны төрлийг дээд, доод, эсвэл бүтэн хувцас гэж сонгох боломжтой.
 
 2. **Universal Havola (URL) va Drag & Drop Import**
    - Istalgan onlayn do‘kon (Zara, ASOS, Farfetch, Uzum Market, Shopify) mahsulot havolasini tashlang yoki kompyuterdan/saytdan kiyim rasmini oyna ustiga tortib tashlang (`Drag & Drop`).
 
-3. **Mobil Ilova — iOS va Android (`apps/mobile` + Interaktiv Simulyator)**
-   - Veb-ilovaning ichida **iPhone 16 Pro (iOS)** va **Pixel 9 Pro (Android)** interaktiv simulyatori mavjud.
-   - `a12anywear://tryon?...` Deep-Link orqali veb-sessiyani darhol smartfonda davom ettirish.
+3. **Mobil ilova prototipi**
+   - `apps/mobile` içinde Expo konfiguratsiyasi va boshlang‘ich service kodlari bor; ishlaydigan native kamera UI hozircha yo‘q.
 
-4. **Brauzer Kengaytmasi va Do‘konlar uchun 1-Qatorli SDK (`apps/extension`)**
-   - Har qanday internet-do‘konga 1 qator `<script>` orqali **"Try On Live with A12"** vidjetini o‘rnatish.
+4. **Brauzer kengaytmasi prototipi**
+   - `apps/extension` hozircha MV3 manifest va drag boshlanishini qayd qiluvchi content script bilan cheklangan; do‘konlarda to‘liq overlay oqimi ulanmagan.
+
+## AI Model
+
+- Tanlangan prototip: [Leffa](https://github.com/franciszzj/Leffa) va [Hugging Face Space](https://huggingface.co/spaces/franciszzj/Leffa).
+- Hugging Face Space ZeroGPU’da navbat bilan ishlaydi; tezlik va kutish vaqti o‘zgarishi mumkin. Bitta AI natijasi jonli video emas.
+- Model card MIT litsenziyasini ko‘rsatadi, ammo rasmiy demo model akademik datasetlarda o‘qitilganini aytadi. Tijoriy foydalanishdan oldin dataset va barcha qo‘shimcha qismlar litsenziyasini tekshir.
 
 ---
 

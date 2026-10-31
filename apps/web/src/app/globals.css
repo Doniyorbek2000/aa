@@ -591,6 +591,14 @@ body {
 .enable-cam:active {
   transform: translateY(1px);
 }
+.camera-error {
+  max-width: 360px;
+  margin: 0;
+  color: #ffe1e1;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
 
 /* Step 2 — garments + widget */
 .t-tip {
