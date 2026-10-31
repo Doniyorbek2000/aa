@@ -54,8 +54,8 @@ export default function InstallWizardPage() {
 
   const scriptBase =
     platform === 'woo'
-      ? 'https://a12.uz/widget/latest/anywear.woocommerce.js'
-      : 'https://a12.uz/widget/latest/anywear.js';
+      ? 'https://a12.uz/widget/latest/a12.woocommerce.js'
+      : 'https://a12.uz/widget/latest/a12.js';
   const scriptSrc = `${scriptBase}?domain=${encodeURIComponent(cleanDomain || 'mystore.com')}`;
   const rawScriptTag = `<script src="${scriptSrc}" async></script>`;
 
@@ -494,25 +494,25 @@ export default function InstallWizardPage() {
               <div className="faq-section">
                 {[
                   {
-                    q: 'Is Anywear actually free?',
+                    q: 'Is A12 actually free?',
                     a: 'Yes, free during Beta. For unlimited sessions or enterprise-scale needs, contact us.',
                   },
                   {
                     q: 'Will I get a dashboard to see how shoppers use it?',
-                    a: "Yes. Once Anywear is activated on your store — that is, once the one line of code is live on your site — you'll receive an email with access to your dashboard.",
+                    a: "Yes. Once A12 is activated on your store — that is, once the one line of code is live on your site — you'll receive an email with access to your dashboard.",
                   },
                   {
-                    q: "What will Anywear's widget look like on my store?",
+                    q: "What will A12's widget look like on my store?",
                     a: 'A floating try-on button that lives on your product pages. Shoppers open it to try on any item live, right in their browser. No app, no account, no extra steps.',
                     hasVideo: true,
                   },
                   {
-                    q: 'How can Anywear increase buyer confidence?',
+                    q: 'How can A12 increase buyer confidence?',
                     a: "When shoppers can see an item on their own body in real-time, they have the information they need to make a confident purchase decision. Studies consistently show that virtual try-on increases conversion rates and reduces returns.",
                   },
                   {
-                    q: 'What is Anywear?',
-                    a: "Anywear is a new AI that lets shoppers try on clothes from any website without going to a physical store. It's the world's first real-time virtual try-on that renders clothing live with true physics, not a static image overlay.",
+                    q: 'What is A12?',
+                    a: "A12 is a new AI that lets shoppers try on clothes from any website without going to a physical store. It's the world's first real-time virtual try-on that renders clothing live with true physics, not a static image overlay.",
                   },
                   {
                     q: "Will it affect my site's performance or design?",
@@ -520,7 +520,7 @@ export default function InstallWizardPage() {
                   },
                   {
                     q: 'Does it work on mobile and desktop?',
-                    a: 'Yes. On desktop, the widget appears on your website and shoppers use it right in the browser. On mobile, shoppers can use the Anywear web or mobile app to try on items from any store. Both experiences are live and real-time.',
+                    a: 'Yes. On desktop, the widget appears on your website and shoppers use it right in the browser. On mobile, shoppers can use the A12 web or mobile app to try on items from any store. Both experiences are live and real-time.',
                   },
                 ].map((item, idx) => (
                   <div

@@ -159,14 +159,14 @@ export default function MobileExperiencePage() {
           <div>
             <span className="eyebrow">iOS &bull; Android &bull; WebRTC 30 FPS</span>
             <h1>
-              Anywear on
+              A12 on
               <br />
               iOS &amp; Android
             </h1>
             <p className="lede">
               Native 30 FPS live camera virtual try-on for iPhone and Android (`@webpul/mobile`).
               Share any product link from Safari, Chrome, Instagram, or TikTok straight into the
-              A12 Anywear camera.
+              A12 camera.
             </p>
 
             <div>

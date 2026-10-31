@@ -125,7 +125,7 @@ export default function VirtualTryOnPillarPage() {
           <span className="eyebrow">AI by A12</span>
           <h1>Virtual try-on, live from your own camera</h1>
           <p className="lede">
-            Anywear puts the garment on your camera feed about a second and a half after you drag it
+            A12 puts the garment on your camera feed about a second and a half after you drag it
             over. You can raise your arms, turn sideways, walk back from the screen. Most try-on
             tools take an uploaded selfie and return one finished picture; this one runs at video
             frame rate, which is why the hem swings when you do.
@@ -157,7 +157,7 @@ export default function VirtualTryOnPillarPage() {
               </strong>{' '}
               It comes in two forms. Photo-based try-on takes a still image of you plus an image of
               a garment and generates a new picture. Live try-on reads your camera and renders the
-              garment onto you at frame rate, so you can move and watch how it falls. Anywear is the
+              garment onto you at frame rate, so you can move and watch how it falls. A12 is the
               second kind, and it runs on any store you browse rather than a partner list.
             </p>
           </div>
@@ -169,14 +169,14 @@ export default function VirtualTryOnPillarPage() {
         </section>
 
         <section>
-          <h2>How virtual try-on works with Anywear</h2>
+          <h2>How virtual try-on works with A12</h2>
           <div className="steps">
             <div className="step">
               <span className="step-n">1</span>
               <div>
                 <h3>Turn on your camera</h3>
                 <p>
-                  Anywear opens in your browser and asks for camera access. Nothing is uploaded, and
+                  A12 opens in your browser and asks for camera access. Nothing is uploaded, and
                   there&rsquo;s no photo to prepare — no clean background, no good lighting, no
                   full-body shot.
                 </p>
@@ -219,7 +219,7 @@ export default function VirtualTryOnPillarPage() {
                   <th>&nbsp;</th>
                   <th>Static overlay</th>
                   <th>Photo generation</th>
-                  <th className="col-ours">Live try-on (Anywear)</th>
+                  <th className="col-ours">Live try-on (A12)</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,7 +278,7 @@ export default function VirtualTryOnPillarPage() {
             <div className="card">
               <h3>Desktop and mobile</h3>
               <p>
-                On a computer it&rsquo;s a Chrome extension. On a phone, the Anywear web &amp;
+                On a computer it&rsquo;s a Chrome extension. On a phone, the A12 web &amp;
                 mobile app does the same job. <Link href="/mobile">Mobile App →</Link>
               </p>
             </div>
@@ -296,7 +296,7 @@ export default function VirtualTryOnPillarPage() {
           <h2>Frequently asked questions</h2>
           <div className="faq">
             <details>
-              <summary>Is Anywear&rsquo;s virtual try-on free?</summary>
+              <summary>Is A12&rsquo;s virtual try-on free?</summary>
               <p>
                 Yes — free during Beta, for a limited time. No account and no card to start.
               </p>
@@ -304,7 +304,7 @@ export default function VirtualTryOnPillarPage() {
             <details>
               <summary>Do I need to upload a photo?</summary>
               <p>
-                No. That&rsquo;s the main difference between Anywear and every other virtual try-on
+                No. That&rsquo;s the main difference between A12 and every other virtual try-on
                 tool. It uses your live camera, so there&rsquo;s no photo to find, crop, or light
                 well.
               </p>
@@ -312,14 +312,14 @@ export default function VirtualTryOnPillarPage() {
             <details>
               <summary>Which stores does it work on?</summary>
               <p>
-                Any of them. Anywear runs in your browser rather than inside one retailer&rsquo;s
+                Any of them. A12 runs in your browser rather than inside one retailer&rsquo;s
                 website, so it works on the fashion stores you already shop.
               </p>
             </details>
             <details>
               <summary>Does it work on my phone?</summary>
               <p>
-                Yes, through the Anywear mobile &amp; web app. The try-on experience is live and
+                Yes, through the A12 mobile &amp; web app. The try-on experience is live and
                 real-time on both desktop and mobile.
               </p>
             </details>

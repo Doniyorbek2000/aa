@@ -41,7 +41,7 @@ export default function BusinessOnePagerPage() {
   const [installSheetOpen, setInstallSheetOpen] = useState(false);
   const [installStoreUrl, setInstallStoreUrl] = useState('');
 
-  const snippetText = `<script src="https://a12.uz/widget/latest/anywear.js?domain=yourstore.com" async></script>`;
+  const snippetText = `<script src="https://a12.uz/widget/latest/a12.js?domain=yourstore.com" async></script>`;
 
   const handleCopySnippet = () => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -553,7 +553,7 @@ export default function BusinessOnePagerPage() {
                 <img
                   src="/assets/one-pager/vton-extension.gif"
                   loading="lazy"
-                  alt="The Anywear try-on panel open on a store's page, rendering a garment onto the shopper live"
+                  alt="The A12 try-on panel open on a store's page, rendering a garment onto the shopper live"
                   width={800}
                   height={586}
                 />
@@ -678,7 +678,7 @@ export default function BusinessOnePagerPage() {
                 <code id="snip">
                   &lt;<span className="ca">script</span> <span className="ca">src</span>=
                   <span className="cv">
-                    &quot;https://a12.uz/widget/latest/anywear.js?domain=yourstore.com&quot;
+                    &quot;https://a12.uz/widget/latest/a12.js?domain=yourstore.com&quot;
                   </span>{' '}
                   <span className="ca">async</span>&gt;&lt;/<span className="ca">script</span>&gt;
                 </code>
@@ -804,7 +804,7 @@ export default function BusinessOnePagerPage() {
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/crislenta.jpg"
-                  alt="Screen recording of the Anywear try-on running on a Loro Piana product page"
+                  alt="Screen recording of the A12 try-on running on a Loro Piana product page"
                   loading="lazy"
                   width={560}
                   height={350}
@@ -826,7 +826,7 @@ export default function BusinessOnePagerPage() {
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/evisdrenova.jpg"
-                  alt="evis talking to camera about Anywear"
+                  alt="evis talking to camera about A12"
                   loading="lazy"
                   width={560}
                   height={350}
@@ -848,7 +848,7 @@ export default function BusinessOnePagerPage() {
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/sofiasofian.jpg"
-                  alt="The Anywear try-on panel open on a fashion storefront"
+                  alt="The A12 try-on panel open on a fashion storefront"
                   loading="lazy"
                   width={560}
                   height={350}
@@ -870,7 +870,7 @@ export default function BusinessOnePagerPage() {
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/devonfrohne.jpg"
-                  alt="The Anywear widget rendering a jacket onto the poster live"
+                  alt="The A12 widget rendering a jacket onto the poster live"
                   loading="lazy"
                   width={560}
                   height={350}

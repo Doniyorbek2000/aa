@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Anywear — Live Virtual Try-On for Any Online Store',
+  title: 'A12 — Live Virtual Try-On for Any Online Store',
   description:
     'Live virtual try-on for any online store. Drag any clothing item onto yourself and see it on your camera in real time. Free Chrome extension, no photo upload.',
   openGraph: {
     type: 'website',
     url: 'https://a12.uz/',
-    title: 'Anywear — Try clothes on, anywhere online',
+    title: 'A12 — Try clothes on, anywhere online',
     description:
       'Drag any clothing item from any online store and see it on you, live. Free Chrome extension, no photo upload.',
     images: [
@@ -19,11 +19,11 @@ export const metadata: Metadata = {
         alt: 'The same shopper side by side: a white t-shirt on the left, a red floral dress rendered live on the right.',
       },
     ],
-    siteName: 'Anywear',
+    siteName: 'A12',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Anywear — Try clothes on, anywhere online',
+    title: 'A12 — Try clothes on, anywhere online',
     description: 'Drag any clothing item from any online store and see it on you, live.',
     images: ['/assets/og-preview.jpg'],
   },

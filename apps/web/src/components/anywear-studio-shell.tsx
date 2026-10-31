@@ -69,7 +69,7 @@ export function AnywearStudioShell() {
     if (navigator.share) {
       navigator
         .share({
-          title: 'Anywear — virtual try-on',
+          title: 'A12 — virtual try-on',
           text: 'Open this on your computer:',
           url,
         })
@@ -221,7 +221,7 @@ export function AnywearStudioShell() {
           className="aw-h-sheet"
           role="dialog"
           aria-modal="true"
-          aria-label="Get Anywear on your laptop"
+          aria-label="Get A12 on your laptop"
         >
           <button
             className="aw-h-close"
@@ -232,7 +232,7 @@ export function AnywearStudioShell() {
             &times;
           </button>
           <div className="aw-h-title-row">
-            <div className="aw-h-title">Search &ldquo;Anywear&rdquo; on Chrome Web Store</div>
+            <div className="aw-h-title">Search &ldquo;A12&rdquo; on Chrome Web Store</div>
           </div>
           <div className="aw-h-flow" id="aw-h-step1">
             <div className="aw-h-action">

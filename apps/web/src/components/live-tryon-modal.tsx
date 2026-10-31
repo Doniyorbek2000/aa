@@ -17,7 +17,7 @@ export function BrandWordmark({ small = false }: { small?: boolean }) {
   return (
     <Link
       href="/"
-      aria-label="Anywear home"
+      aria-label="A12 home"
       className={`brand-wordmark-link ${small ? 'brand-wordmark-sm' : ''}`}
     >
       <img
@@ -27,7 +27,7 @@ export function BrandWordmark({ small = false }: { small?: boolean }) {
         height={small ? 28 : 38}
         className="brand-wordmark-logo"
       />
-      <span className="brand-wordmark-text">anywear</span>
+      <span className="brand-wordmark-text">A12</span>
     </Link>
   );
 }
@@ -491,7 +491,7 @@ export function LiveTryOnModal({
               />
             </div>
             <p className="t-install-sub">
-              Add <strong>Anywear</strong> to Chrome and this exact try-on appears right on every
+              Add <strong>A12</strong> to Chrome and this exact try-on appears right on every
               product page — Zara, ASOS, Amazon and beyond. Drag any item onto yourself and see how
               it looks before you buy.
             </p>
