@@ -3,15 +3,16 @@ import { I18nProvider } from '@/lib/i18n';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://a12.uz'),
   title: 'A12 — Live Virtual Try-On for Any Online Store',
   description:
-    'Live virtual try-on for any online store. Drag any clothing item onto yourself and see it on your camera in real time. Free Chrome extension, no photo upload.',
+    'Live virtual try-on for any online store. Drag any clothing item onto yourself and see it on your camera in real time. Free Chrome extension; the live preview stays in your browser.',
   openGraph: {
     type: 'website',
     url: 'https://a12.uz/',
     title: 'A12 — Try clothes on, anywhere online',
     description:
-      'Drag any clothing item from any online store and see it on you, live. Free Chrome extension, no photo upload.',
+      'Drag any clothing item from any online store and see it on you, live. Free Chrome extension; the live preview stays in your browser.',
     images: [
       {
         url: '/assets/one-pager/vton-hero.gif',

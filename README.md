@@ -37,15 +37,15 @@ webpul/
 
 1. **Web kamera preview va AI surat**
    - `getUserMedia` haqiqiy kamerani ochadi; kamera ishlamasa demo video bilan almashtirilmaydi.
-   - Lokal canvas preview kiyim rasmini tana ustiga taxminan joylaydi; bu pose modeli yoki generative AI биш.
+   - Lokal canvas preview kiyim rasmini tana ustiga taxminan joylaydi; bu pose modeli yoki generative AI emas.
    - `Leffa AI · Hugging Face` tugmasi bosilganda, foydalanuvchi tasdiqlashidan so‘ng kamera kadri va kiyim rasmi Hugging Face Space’ga yuboriladi. Natija bitta surat; live video emas.
-   - Leffa хувцасны төрлийг дээд, доод, эсвэл бүтэн хувцас гэж сонгох боломжтой.
+   - Leffa uchun kiyim turini tanlash mumkin: ustki kiyim, pastki kiyim yoki butun kiyim (ko‘ylak).
 
 2. **Universal Havola (URL) va Drag & Drop Import**
    - Istalgan onlayn do‘kon (Zara, ASOS, Farfetch, Uzum Market, Shopify) mahsulot havolasini tashlang yoki kompyuterdan/saytdan kiyim rasmini oyna ustiga tortib tashlang (`Drag & Drop`).
 
 3. **Mobil ilova prototipi**
-   - `apps/mobile` içinde Expo konfiguratsiyasi va boshlang‘ich service kodlari bor; ishlaydigan native kamera UI hozircha yo‘q.
+   - `apps/mobile` ichida Expo konfiguratsiyasi va boshlang‘ich service kodlari bor; ishlaydigan native kamera UI hozircha yo‘q.
 
 4. **Brauzer kengaytmasi prototipi**
    - `apps/extension` hozircha MV3 manifest va drag boshlanishini qayd qiluvchi content script bilan cheklangan; do‘konlarda to‘liq overlay oqimi ulanmagan.
