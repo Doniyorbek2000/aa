@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "A12 Anywear AI",
+    "slug": "a12-anywear-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "../../logo.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "../../logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050811"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ai.a12.anywear",
+      "infoPlist": {
+        "NSCameraUsageDescription": "A12 Anywear requires real-time camera access for 30 FPS AI Virtual Try-On.",
+        "NSMicrophoneUsageDescription": "Optional audio capture when recording lookbook video clips.",
+        "NSPhotoLibraryAddUsageDescription": "Save your virtual try-on outfits and videos to your gallery."
+      }
+    },
+    "android": {
+      "package": "ai.a12.anywear",
+      "adaptiveIcon": {
+        "foregroundImage": "../../logo.png",
+        "backgroundColor": "#050811"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ]
+    },
+    "scheme": "a12anywear"
+  }
+}
+

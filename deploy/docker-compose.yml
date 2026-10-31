@@ -1,9 +1,11 @@
-# Production web on the shared server (/opt/webpul). Exposed only through the shared Caddy
-# (network "proxy" = nurbozor_default), which proxies a12.uz -> webpul-web:3000.
-name: webpul
+# Production deployment on the shared server (/opt/adm).
+# Exposed only through the shared Caddy (network "proxy" = nurbozor_default),
+# which proxies a12.uz -> adm:3000 (and alias webpul-web:3000).
+name: adm
 
 services:
-  web:
+  adm:
+    container_name: adm
     build:
       context: ..
       dockerfile: apps/web/Dockerfile
@@ -12,9 +14,10 @@ services:
     restart: unless-stopped
     networks:
       proxy:
-        aliases: [webpul-web]
+        aliases: [adm, webpul-web]
 
 networks:
   proxy:
     external: true
     name: nurbozor_default
+

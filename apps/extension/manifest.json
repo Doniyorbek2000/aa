@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "A12 Anywear — Live AI Virtual Try-On",
+  "version": "1.0.0",
+  "description": "Drag and drop any outfit from any online store into your live 30 FPS AI mirror powered by A12 Lucy V-TON.",
+  "permissions": ["activeTab", "storage", "contextMenus"],
+  "action": {
+    "default_title": "Open A12 Anywear Mirror"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+

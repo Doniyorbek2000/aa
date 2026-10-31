@@ -1,0 +1,28 @@
+{
+  "name": "@webpul/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "App.tsx",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@webpul/shared-core": "workspace:*",
+    "expo": "~53.0.0",
+    "expo-camera": "~16.1.0",
+    "expo-haptics": "~14.1.0",
+    "expo-image-picker": "~16.1.0",
+    "react": "19.3.1",
+    "react-native": "0.79.0",
+    "react-native-vision-camera": "^4.6.4",
+    "react-native-webrtc": "^124.0.4"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "6.0.3"
+  }
+}
+

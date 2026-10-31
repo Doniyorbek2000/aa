@@ -4,12 +4,12 @@ WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/web/package.json apps/web/
-COPY packages/db/package.json packages/db/
-RUN pnpm install --frozen-lockfile --filter @webpul/web...
+COPY packages/shared-core/package.json packages/shared-core/
+RUN pnpm install --no-frozen-lockfile --filter @webpul/web...
+COPY packages/shared-core packages/shared-core
 COPY apps/web apps/web
-# NEXT_PUBLIC_* values are inlined at build time.
-ARG NEXT_PUBLIC_SITE_URL
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_SITE_URL=https://a12.uz
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL NEXT_TELEMETRY_DISABLED=1 DOCKER_BUILD=1
 RUN pnpm --filter @webpul/web build
 
 FROM node:24-alpine
