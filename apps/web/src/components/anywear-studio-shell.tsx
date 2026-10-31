@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { LanguageSwitcher, useI18n } from '@/lib/i18n';
 import {
   BrandWordmark,
   CWS_URL,
@@ -12,6 +13,7 @@ import {
 const BROWSER_SITES = ['revolve.com', 'pinterest.com'];
 
 export function AnywearStudioShell() {
+  const { t } = useI18n();
   const [tryModalOpen, setTryModalOpen] = useState(false);
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [copiedHandoff, setCopiedHandoff] = useState(false);
@@ -84,17 +86,18 @@ export function AnywearStudioShell() {
       <main className="stage">
         {/* ═══ Left column ═══ */}
         <section className="panel-left">
-          <BrandWordmark />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%' }}>
+            <BrandWordmark />
+            <LanguageSwitcher />
+          </div>
 
           <div className="hero-copy">
             <h1>
-              Try clothes on,
+              {t.heroTitleLine1}
               <br />
-              anywhere online
+              {t.heroTitleLine2}
             </h1>
-            <p className="lede">
-              Drag any clothing item from any online store and see it on you, instantly.
-            </p>
+            <p className="lede">{t.heroLede}</p>
             <div className="cta">
               <a
                 className="btn btn-primary"
@@ -110,22 +113,20 @@ export function AnywearStudioShell() {
                   width={20}
                   height={20}
                 />
-                <span className="cta-desktop-label">Add to Chrome</span>
-                <span className="cta-mobile-label">Add to Chrome on your Laptop</span>
+                <span className="cta-desktop-label">{t.addToChrome}</span>
+                <span className="cta-mobile-label">{t.addToChromeLaptop}</span>
               </a>
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setTryModalOpen(true)}
               >
-                Try Example
+                {t.tryExample}
               </button>
             </div>
 
             <Link href="/business" className="store-cta">
-              <span className="store-cta-text">
-                Own a store? Add virtual try-on to your website
-              </span>
+              <span className="store-cta-text">{t.ownAStoreCta}</span>
               <span className="store-cta-arrow">→</span>
             </Link>
           </div>
@@ -145,7 +146,7 @@ export function AnywearStudioShell() {
               >
                 <path d="M12 2l1.6 6.4a2 2 0 0 0 1.5 1.5L22 12l-6.4 1.6a2 2 0 0 0-1.5 1.5L12 22l-1.6-6.4a2 2 0 0 0-1.5-1.5L2 12l6.4-1.6a2 2 0 0 0 1.5-1.5z" />
               </svg>
-              Free during Beta. Available for limited time.
+              {t.betaBadge}
             </span>
 
             <div className="browser">
@@ -178,11 +179,11 @@ export function AnywearStudioShell() {
           </div>
 
           <nav className="legal" aria-label="Legal">
-            <Link href="/virtual-try-on">Virtual Try-On</Link>
-            <Link href="/mobile">Mobile App (iOS &amp; Android)</Link>
-            <Link href="/legal#privacy">Privacy Policy</Link>
-            <Link href="/legal#terms">Terms of Service</Link>
-            <Link href="/legal#aup">Acceptable Use Policy</Link>
+            <Link href="/virtual-try-on">{t.navVirtualTryOn}</Link>
+            <Link href="/mobile">{t.navMobileApp}</Link>
+            <Link href="/legal#privacy">{t.navPrivacy}</Link>
+            <Link href="/legal#terms">{t.navTerms}</Link>
+            <Link href="/legal#aup">{t.navAup}</Link>
           </nav>
         </section>
       </main>
@@ -212,7 +213,7 @@ export function AnywearStudioShell() {
             &times;
           </button>
           <div className="aw-h-title-row">
-            <div className="aw-h-title">Search &ldquo;A12&rdquo; on Chrome Web Store</div>
+            <div className="aw-h-title">{t.handoffTitle}</div>
           </div>
           <div className="aw-h-flow" id="aw-h-step1">
             <div className="aw-h-action">
@@ -221,18 +222,16 @@ export function AnywearStudioShell() {
                 className="aw-h-btn aw-primary aw-h-share-main"
                 onClick={handleShareHandoffLink}
               >
-                <span className="aw-h-label">Share Link to Your Laptop</span>
+                <span className="aw-h-label">{t.handoffShareBtn}</span>
               </button>
               <div className="aw-h-sub-row">
-                <span className="aw-h-sub-note">
-                  AirDrop, copy, email, or message the link to your computer.
-                </span>
+                <span className="aw-h-sub-note">{t.handoffSubNote}</span>
                 <button
                   type="button"
                   className="aw-h-copy-link"
                   onClick={handleCopyHandoffLink}
                 >
-                  <span className="aw-h-label">{copiedHandoff ? 'Copied ✓' : 'Copy link'}</span>
+                  <span className="aw-h-label">{copiedHandoff ? t.copied : t.copyLink}</span>
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -250,7 +249,7 @@ export function AnywearStudioShell() {
             </div>
           </div>
           <a className="aw-h-store-anyway" href={CWS_URL}>
-            Or continue to A12 Store Setup →
+            {t.continueToStoreSetup}
           </a>
         </div>
       </div>

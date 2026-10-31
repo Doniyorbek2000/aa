@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { LanguageSwitcher, useI18n } from '@/lib/i18n';
 import {
   BrandWordmark,
   DEFAULT_GARMENTS,
@@ -10,6 +11,7 @@ import {
 } from '@/components/live-tryon-modal';
 
 export default function MobileExperiencePage() {
+  const { t } = useI18n();
   const [selectedOS, setSelectedOS] = useState<'ios' | 'android'>('ios');
   const [selectedGarment, setSelectedGarment] = useState(DEFAULT_GARMENTS[0]);
   const [tryModalOpen, setTryModalOpen] = useState(false);
@@ -139,16 +141,17 @@ export default function MobileExperiencePage() {
       <header className="topbar">
         <div className="wrap topbar-in">
           <BrandWordmark small />
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <LanguageSwitcher />
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => setTryModalOpen(true)}
             >
-              Open Live Camera Try-On
+              {t.openLiveCamera}
             </button>
             <Link className="btn btn-secondary" href="/">
-              Home
+              {t.navHome}
             </Link>
           </div>
         </div>
@@ -159,15 +162,11 @@ export default function MobileExperiencePage() {
           <div>
             <span className="eyebrow">iOS &bull; Android &bull; WebRTC 30 FPS</span>
             <h1>
-              A12 on
+              {t.mobileHeroTitle1}
               <br />
-              iOS &amp; Android
+              {t.mobileHeroTitle2}
             </h1>
-            <p className="lede">
-              Native 30 FPS live camera virtual try-on for iPhone and Android (`@webpul/mobile`).
-              Share any product link from Safari, Chrome, Instagram, or TikTok straight into the
-              A12 camera.
-            </p>
+            <p className="lede">{t.mobileHeroLede}</p>
 
             <div>
               <div className="os-tabs">
@@ -221,10 +220,10 @@ export default function MobileExperiencePage() {
                 className="btn btn-primary"
                 onClick={() => setTryModalOpen(true)}
               >
-                Try Live Camera Now
+                {t.tryLiveCameraNow}
               </button>
               <Link className="btn btn-secondary" href="/business">
-                For Store Owners →
+                {t.navForStores} →
               </Link>
             </div>
           </div>

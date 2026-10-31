@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { LanguageSwitcher, useI18n } from '@/lib/i18n';
 import {
   BrandWordmark,
   CWS_URL,
@@ -27,6 +28,7 @@ function normaliseStore(v: string): string {
 }
 
 export default function BusinessOnePagerPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [copiedSnip, setCopiedSnip] = useState(false);
   const [tryModalOpen, setTryModalOpen] = useState(false);
@@ -396,6 +398,7 @@ export default function BusinessOnePagerPage() {
         <div className="wrap topbar-in">
           <BrandWordmark small />
           <span className="topbar-cta">
+            <LanguageSwitcher />
             <button
               type="button"
               className="btn btn-secondary btn-sm btn-talk"
@@ -404,14 +407,14 @@ export default function BusinessOnePagerPage() {
                 setPreviewSheetOpen(true);
               }}
             >
-              See it on my store
+              {t.seeItOnMyStore}
             </button>
             <button
               type="button"
               className="btn btn-primary btn-sm"
               onClick={() => setInstallSheetOpen(true)}
             >
-              Install on my store
+              {t.installOnMyStore}
             </button>
           </span>
         </div>
@@ -422,22 +425,19 @@ export default function BusinessOnePagerPage() {
         <div className="wrap hero-grid">
           <div>
             <h1>
-              Real-time
+              {t.bizHeroTitle1}
               <br />
-              virtual try-on
+              {t.bizHeroTitle2}
             </h1>
-            <p className="lede">
-              Your shopper opens their camera and sees themselves wearing it &mdash; moving, in real
-              time. Not a photo upload, not a render queue.
-            </p>
+            <p className="lede">{t.bizHeroLede}</p>
             <div className="cta-row">
               <button
                 type="button"
                 className="btn btn-primary btn-stack"
                 onClick={() => setInstallSheetOpen(true)}
               >
-                <span className="b-main">Install on my store</span>
-                <span className="b-sub">For free &middot; using one line of code</span>
+                <span className="b-main">{t.installOnMyStore}</span>
+                <span className="b-sub">{t.forFreeOneLine}</span>
               </button>
               <button
                 type="button"
@@ -456,17 +456,16 @@ export default function BusinessOnePagerPage() {
                     width={16}
                     height={16}
                   />
-                  See it on my store
+                  {t.seeItOnMyStore}
                 </span>
-                <span className="b-sub">Your own product pages &middot; only you can see it</span>
+                <span className="b-sub">{t.ownProductPagesSub}</span>
               </button>
             </div>
             <p className="demo-link-row">
-              Or <a href="#demo">try it on yourself right here</a> &mdash; camera on, nothing to
-              install, about a minute.
+              <a href="#demo">{t.orTryItRightHere}</a>
             </p>
             <p className="demo-link-row expert-row">
-              or <Link href="/install">Talk to an expert</Link>
+              <Link href="/install">{t.talkToExpert}</Link>
             </p>
           </div>
 
@@ -479,9 +478,7 @@ export default function BusinessOnePagerPage() {
                 height={337}
               />
             </div>
-            <p className="shot-cap">
-              The concept: one of your garments, rendered onto a real shopper, live.
-            </p>
+            <p className="shot-cap">{t.heroShotCaption}</p>
           </div>
         </div>
       </section>
@@ -489,12 +486,9 @@ export default function BusinessOnePagerPage() {
       {/* ═══ LIVE DEMO — the widget itself, on this page ═══ */}
       <section className="demo" id="demo">
         <div className="wrap">
-          <span className="eyebrow">Live demo</span>
-          <h2>Try it on yourself, on this page.</h2>
-          <p className="lede">
-            Click <strong>Try-On</strong> on any garment. Every virtual try-on you have been shown
-            before was a photo edit &mdash; this one you can move in.
-          </p>
+          <span className="eyebrow">{t.liveDemoEyebrow}</span>
+          <h2>{t.liveDemoTitle}</h2>
+          <p className="lede">{t.liveDemoLede}</p>
 
           <div className="garments">
             {DEMO_GARMENTS.map((src, i) => (
@@ -514,7 +508,7 @@ export default function BusinessOnePagerPage() {
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M12 2l1.6 6.4a2 2 0 0 0 1.5 1.5L22 12l-6.4 1.6a2 2 0 0 0-1.5 1.5L12 22l-1.6-6.4a2 2 0 0 0-1.5-1.5L2 12l6.4-1.6a2 2 0 0 0 1.5-1.5z" />
                   </svg>
-                  Try-On
+                  {t.tryOnPin}
                 </button>
                 <img
                   src={src}
@@ -527,10 +521,7 @@ export default function BusinessOnePagerPage() {
             ))}
           </div>
 
-          <p className="demo-foot">
-            The same widget your shoppers would get, on your own products, on mobile and desktop,
-            once it&rsquo;s installed. Free to trial, so it won&rsquo;t serve your whole traffic.
-          </p>
+          <p className="demo-foot">{t.liveDemoFoot}</p>
         </div>
       </section>
 
@@ -539,14 +530,9 @@ export default function BusinessOnePagerPage() {
         <div className="wrap">
           <div className="why-head">
             <div>
-              <span className="eyebrow">Engagement</span>
-              <h2>Try-on keeps shoppers in your store for longer.</h2>
-              <p className="lede">
-                Every minute spent trying something on is a minute on your site, on top of the
-                browsing and reading they would have done anyway. Among shoppers who open it, more
-                than <strong>2 in 5</strong> stay past five minutes and <strong>1 in 10</strong>{' '}
-                past half an hour.
-              </p>
+              <span className="eyebrow">{t.engagementEyebrow}</span>
+              <h2>{t.engagementTitle}</h2>
+              <p className="lede">{t.engagementLede}</p>
             </div>
             <div className="shot">
               <div className="frame frame-shot">
@@ -558,7 +544,6 @@ export default function BusinessOnePagerPage() {
                   height={586}
                 />
               </div>
-              <p className="shot-cap">A shopper several minutes into a product page.</p>
             </div>
           </div>
         </div>
@@ -567,50 +552,40 @@ export default function BusinessOnePagerPage() {
       {/* ═══ The three numbers ═══ */}
       <section className="numbers">
         <div className="wrap">
-          <span className="eyebrow">What changes</span>
+          <span className="eyebrow">{t.whatChangesEyebrow}</span>
 
           <div className="rows">
             <div className="row">
-              <div className="row-claim">More add-to-carts.</div>
-              <div className="row-fig">1 in 9</div>
-              <p className="row-detail">
-                11.3% of shoppers who tried a garment on clicked add-to-cart or buy-now in the same
-                window.
-              </p>
+              <div className="row-claim">{t.stat1Claim}</div>
+              <div className="row-fig">{t.stat1Fig}</div>
+              <p className="row-detail">{t.stat1Detail}</p>
             </div>
             <div className="row">
-              <div className="row-claim">More of your catalogue tried.</div>
+              <div className="row-claim">{t.stat2Claim}</div>
               <div className="row-fig">
-                8.7 <span>items per visit</span>
+                8.7 <span>{t.stat2FigSub}</span>
               </div>
-              <p className="row-detail">
-                Not one product page. 3 in 4 shoppers go past the first item they came for.
-              </p>
+              <p className="row-detail">{t.stat2Detail}</p>
             </div>
             <div className="row">
-              <div className="row-claim">Longer visits.</div>
+              <div className="row-claim">{t.stat3Claim}</div>
               <div className="row-fig">
-                7.8 <span>minutes</span>
+                7.8 <span>{t.stat3FigSub}</span>
               </div>
-              <p className="row-detail">
-                Average session, from a shopper&rsquo;s first try-on to their last.
-              </p>
+              <p className="row-detail">{t.stat3Detail}</p>
             </div>
           </div>
 
-          <p className="numbers-sub">Measured on our own network, across real storefronts.</p>
+          <p className="numbers-sub">{t.measuredSub}</p>
         </div>
       </section>
 
       {/* ═══ BEAT 3 — Activate today ═══ */}
       <section className="activate" id="activate">
         <div className="wrap">
-          <span className="eyebrow">Activate today</span>
-          <h2>One line of code to install. One click to try it first.</h2>
-          <p className="lede">
-            Both free to start, and either takes about a minute. Option 1 is a demo, on your own
-            store, that only you can see; Option 2 puts it live for your shoppers.
-          </p>
+          <span className="eyebrow">{t.activateEyebrow}</span>
+          <h2>{t.activateTitle}</h2>
+          <p className="lede">{t.activateLede}</p>
 
           <div className="tracks">
             <div className="track">
@@ -618,14 +593,10 @@ export default function BusinessOnePagerPage() {
                 <span className="opt-n" aria-hidden="true">
                   1
                 </span>
-                <span className="track-tag">Option 1 &middot; private demo</span>
+                <span className="track-tag">{t.opt1Tag}</span>
               </div>
-              <h3>Try it on your store, right now</h3>
-              <p>
-                <strong>A demo, not an install.</strong> The try-on appears on your own product
-                pages, visible only to you, and nothing on your site changes. It needs a computer to
-                view; once it is live, your shoppers get it on mobile too.
-              </p>
+              <h3>{t.opt1Title}</h3>
+              <p>{t.opt1Body}</p>
 
               <div className="cta-row">
                 <button
@@ -645,9 +616,9 @@ export default function BusinessOnePagerPage() {
                       width={20}
                       height={20}
                     />
-                    See the demo on my store
+                    {t.opt1Btn}
                   </span>
-                  <span className="b-sub">about a minute, your site is untouched</span>
+                  <span className="b-sub">{t.opt1Sub}</span>
                 </button>
               </div>
             </div>
@@ -657,17 +628,10 @@ export default function BusinessOnePagerPage() {
                 <span className="opt-n" aria-hidden="true">
                   2
                 </span>
-                <span className="track-tag">Option 2 &middot; go live</span>
+                <span className="track-tag">{t.opt2Tag}</span>
               </div>
-              <h3>Install it on your store</h3>
-              <p>
-                Seamless: <strong>no work for your engineers</strong>. On Shopify it&rsquo;s one
-                click from the{' '}
-                <Link href="/install" style={{ color: 'inherit' }}>
-                  App&nbsp;Store
-                </Link>
-                . Anywhere else, paste one line before <code>&lt;/body&gt;</code>:
-              </p>
+              <h3>{t.opt2Title}</h3>
+              <p>{t.opt2Body}</p>
 
               <div className="snippet">
                 <code id="snip">
@@ -680,9 +644,9 @@ export default function BusinessOnePagerPage() {
               </div>
               <div className="snippet-foot">
                 <button className="copy-btn" type="button" onClick={handleCopySnippet}>
-                  {copiedSnip ? 'Copied ✓' : 'Copy'}
+                  {copiedSnip ? t.copied : t.copyBtn}
                 </button>
-                <span>Shopify: one click &middot; WooCommerce or any site: this one line</span>
+                <span>Shopify · WooCommerce · HTML</span>
               </div>
 
               <div className="cta-row">
@@ -691,15 +655,10 @@ export default function BusinessOnePagerPage() {
                   className="btn btn-primary btn-stack"
                   onClick={() => setInstallSheetOpen(true)}
                 >
-                  <span className="b-main">Install on my store</span>
-                  <span className="b-sub">just one line of code</span>
+                  <span className="b-main">{t.installOnMyStore}</span>
+                  <span className="b-sub">{t.justOneLine}</span>
                 </button>
               </div>
-              <p className="fine">
-                Free to trial: enough to prove it on your store, not to serve all your shoppers.
-                Happy with what you see? <Link href="/install">Talk to an expert</Link> about
-                opening it to everyone.
-              </p>
             </div>
           </div>
         </div>

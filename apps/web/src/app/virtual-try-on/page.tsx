@@ -2,9 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { LanguageSwitcher, useI18n } from '@/lib/i18n';
 import { BrandWordmark, CWS_URL, PoweredByA12 } from '@/components/live-tryon-modal';
 
 export default function VirtualTryOnPillarPage() {
+  const { t } = useI18n();
   return (
     <div className="vto-seo-root">
       <style>{`
@@ -116,86 +118,61 @@ export default function VirtualTryOnPillarPage() {
       <div className="wrap">
         <header className="topbar">
           <BrandWordmark small />
-          <Link className="btn btn-secondary" href="/">
-            Home
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <LanguageSwitcher />
+            <Link className="btn btn-secondary" href="/">
+              {t.navHome}
+            </Link>
+          </div>
         </header>
 
         <div className="hero">
           <span className="eyebrow">AI by A12</span>
-          <h1>Virtual try-on, live from your own camera</h1>
-          <p className="lede">
-            A12 puts the garment on your camera feed about a second and a half after you drag it
-            over. You can raise your arms, turn sideways, walk back from the screen. Most try-on
-            tools take an uploaded selfie and return one finished picture; this one runs at video
-            frame rate, which is why the hem swings when you do.
-          </p>
+          <h1>{t.vtoHeroTitle}</h1>
+          <p className="lede">{t.vtoHeroLede}</p>
           <div className="cta">
             <Link className="btn btn-primary" href={CWS_URL}>
               <img src="/assets/chrome.svg" alt="" aria-hidden="true" width={20} height={20} />
-              Add to Chrome — free
+              {t.addToChrome}
             </Link>
             <Link className="btn btn-secondary" href="/?try=1">
-              Try it without installing
+              {t.tryWithoutInstalling}
             </Link>
           </div>
-          <p className="cta-note">Free during Beta. No account. Works on any online store.</p>
+          <p className="cta-note">{t.betaBadge}</p>
         </div>
 
         <section>
-          <h2>What is virtual try-on?</h2>
+          <h2>{t.whatIsVtoTitle}</h2>
           <div className="answer">
             <p>
-              <strong>
-                Virtual try-on is technology that shows you how a product looks on your own body
-                before you buy it.
-              </strong>{' '}
-              It comes in two forms. Photo-based try-on takes a still image of you plus an image of
-              a garment and generates a new picture. Live try-on reads your camera and renders the
-              garment onto you at frame rate, so you can move and watch how it falls. A12 is the
-              second kind, and it runs on any store you browse rather than a partner list.
+              <strong>{t.whatIsVtoBody}</strong>
             </p>
           </div>
-          <p>
-            In practice the two answer different questions. A generated photo settles colour and
-            rough proportion. Movement settles the rest: whether a wrap dress stays shut when you
-            reach, whether a boxy tee reads boxy or shapeless on your shoulders.
-          </p>
         </section>
 
         <section>
-          <h2>How virtual try-on works with A12</h2>
+          <h2>{t.howItWorksTitle}</h2>
           <div className="steps">
             <div className="step">
               <span className="step-n">1</span>
               <div>
-                <h3>Turn on your camera</h3>
-                <p>
-                  A12 opens in your browser and asks for camera access. Nothing is uploaded, and
-                  there&rsquo;s no photo to prepare — no clean background, no good lighting, no
-                  full-body shot.
-                </p>
+                <h3>{t.modalStep1Heading}</h3>
+                <p>{t.enableCamera}</p>
               </div>
             </div>
             <div className="step">
               <span className="step-n">2</span>
               <div>
-                <h3>Drag a product onto yourself</h3>
-                <p>
-                  Grab any clothing image from the store page you&rsquo;re already on and drop it
-                  onto your video. The garment appears on you within a second or two.
-                </p>
+                <h3>{t.modalStep2Heading}</h3>
+                <p>{t.heroLede}</p>
               </div>
             </div>
             <div className="step">
               <span className="step-n">3</span>
               <div>
-                <h3>Move in it</h3>
-                <p>
-                  Turn, walk back, raise your arms. The garment tracks and drapes as you go. A
-                  typical session runs a little under eight minutes, and most people try several
-                  items in that time.
-                </p>
+                <h3>{t.modalStep3Heading}</h3>
+                <p>{t.modalStep3Sub}</p>
               </div>
             </div>
           </div>

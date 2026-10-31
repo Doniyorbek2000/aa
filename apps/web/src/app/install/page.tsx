@@ -2,11 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { LanguageSwitcher, useI18n } from '@/lib/i18n';
 import { BrandWordmark, PoweredByA12 } from '@/components/live-tryon-modal';
 
 type PlatformType = 'shopify' | 'woo' | 'any';
 
 export default function InstallWizardPage() {
+  const { t } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [platform, setPlatform] = useState<PlatformType | null>(null);
   const [domain, setDomain] = useState('');
@@ -269,17 +271,20 @@ export default function InstallWizardPage() {
       <header className="topbar">
         <div className="wrap topbar-in">
           <BrandWordmark small />
-          <Link className="btn btn-secondary btn-sm" href="/?try=1">
-            <img
-              className="chrome-ico"
-              src="/assets/chrome.svg"
-              alt=""
-              aria-hidden="true"
-              width={20}
-              height={20}
-            />
-            See it on my store
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <LanguageSwitcher />
+            <Link className="btn btn-secondary btn-sm" href="/?try=1">
+              <img
+                className="chrome-ico"
+                src="/assets/chrome.svg"
+                alt=""
+                aria-hidden="true"
+                width={20}
+                height={20}
+              />
+              {t.seeItOnMyStore}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -287,20 +292,18 @@ export default function InstallWizardPage() {
         <section className="hero">
           <div className="wrap hero-grid">
             <div>
-              <span className="eyebrow">For store owners</span>
+              <span className="eyebrow">{t.forStoreOwners}</span>
               <h1>
-                Install live video try-on
+                {t.installHeroTitle1}
                 <br />
-                on your store.
+                {t.installHeroTitle2}
               </h1>
-              <p className="lede">
-                Just <strong>one line of code</strong>, that&rsquo;s all it takes.
-              </p>
+              <p className="lede">{t.installHeroLede}</p>
 
               <div className="panel">
                 <div className="wiz-head">
                   <span className="wiz-count">
-                    Step <span>{step}</span> of 3
+                    {t.stepOf3.replace('{step}', String(step))}
                   </span>
                   {step > 1 && (
                     <button
@@ -308,7 +311,7 @@ export default function InstallWizardPage() {
                       className="wiz-back"
                       onClick={() => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2) : 1))}
                     >
-                      &larr; Back
+                      {t.backBtn}
                     </button>
                   )}
                 </div>
@@ -319,7 +322,7 @@ export default function InstallWizardPage() {
                 {/* Step 1: Platform */}
                 {step === 1 && (
                   <div>
-                    <p className="wiz-q">What type of website do you have?</p>
+                    <p className="wiz-q">{t.whatTypeWebsite}</p>
                     <div className="platform-opts">
                       <button
                         type="button"
@@ -340,7 +343,7 @@ export default function InstallWizardPage() {
                         className={`popt ${platform === 'any' ? 'selected' : ''}`}
                         onClick={() => selectPlatform('any')}
                       >
-                        Any website
+                        {t.anyWebsite}
                       </button>
                     </div>
                   </div>
@@ -349,10 +352,10 @@ export default function InstallWizardPage() {
                 {/* Step 2: Domain + email */}
                 {step === 2 && (
                   <div>
-                    <p className="wiz-q">Which store are we installing on?</p>
+                    <p className="wiz-q">{t.whichStoreInstalling}</p>
                     <div className="wiz-form">
                       <div className="wiz-field">
-                        <label htmlFor="w-domain">Store domain</label>
+                        <label htmlFor="w-domain">{t.storeDomainLabel}</label>
                         <input
                           type="text"
                           id="w-domain"
@@ -363,10 +366,10 @@ export default function InstallWizardPage() {
                           autoCapitalize="none"
                           spellCheck={false}
                         />
-                        <div className="wiz-hint">e.g. mystore.com (no https:// needed)</div>
+                        <div className="wiz-hint">mystore.com</div>
                       </div>
                       <div className="wiz-field">
-                        <label htmlFor="w-email">Your email</label>
+                        <label htmlFor="w-email">{t.yourEmailLabel}</label>
                         <input
                           type="email"
                           id="w-email"
@@ -374,27 +377,23 @@ export default function InstallWizardPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                         />
-                        <div className="wiz-hint">
-                          Once activated on your store, you&rsquo;ll receive an email with access to
-                          your dashboard.
-                        </div>
                       </div>
                       <div className="wiz-field wiz-field-wide">
-                        <label htmlFor="w-price">Typical garment price</label>
+                        <label htmlFor="w-price">{t.typicalPriceLabel}</label>
                         <select
                           id="w-price"
                           value={priceRange}
                           onChange={(e) => setPriceRange(e.target.value)}
                         >
                           <option value="" disabled>
-                            Select a range&hellip;
+                            {t.selectRange}
                           </option>
                           <option value="5_50">$5 &ndash; $50</option>
                           <option value="50_100">$50 &ndash; $100</option>
                           <option value="100_150">$100 &ndash; $150</option>
                           <option value="150_300">$150 &ndash; $300</option>
                           <option value="300_500">$300 &ndash; $500</option>
-                          <option value="over_500">Over $500</option>
+                          <option value="over_500">$500+</option>
                         </select>
                       </div>
                     </div>
@@ -404,9 +403,7 @@ export default function InstallWizardPage() {
                         className={`btn btn-primary wiz-fwd ${formReady ? 'ready' : ''}`}
                         onClick={() => setStep(3)}
                       >
-                        {platform === 'shopify'
-                          ? 'Install on Shopify →'
-                          : 'Install using one-line of code →'}
+                        {t.installCodeBtn}
                       </button>
                     </div>
                   </div>
@@ -415,18 +412,8 @@ export default function InstallWizardPage() {
                 {/* Step 3: Snippet */}
                 {step === 3 && (
                   <div>
-                    <p className="wiz-step-title">One line of code. That&rsquo;s all it takes.</p>
-                    <p className="snippet-lead">
-                      Paste this into your{' '}
-                      <strong>
-                        {platform === 'woo'
-                          ? 'WooCommerce template'
-                          : platform === 'shopify'
-                          ? 'Shopify theme.liquid'
-                          : 'site'}
-                      </strong>
-                      , just before <code className="mono">&lt;/body&gt;</code>:
-                    </p>
+                    <p className="wiz-step-title">{t.oneLineTitle}</p>
+                    <p className="snippet-lead">{t.pasteBeforeBody}</p>
                     <div className="snippet">
                       <code>
                         <span className="ct">&lt;</span>
@@ -442,27 +429,22 @@ export default function InstallWizardPage() {
                         className={`copy-btn ${copied ? 'copied' : ''}`}
                         onClick={handleCopy}
                       >
-                        {copied ? 'Copied!' : 'Copy'}
+                        {copied ? t.copied : t.copyBtn}
                       </button>
                       <span>
-                        File:{' '}
                         <code className="mono">
                           {platform === 'woo'
                             ? 'footer.php'
                             : platform === 'shopify'
                             ? 'layout/theme.liquid'
-                            : 'your HTML template'}
+                            : 'index.html'}
                         </code>
                       </span>
                     </div>
-                    <p className="dash-note">
-                      Once it&rsquo;s live on your store, you&rsquo;ll receive an email with access
-                      to your dashboard.
-                    </p>
 
                     <div className="restart-link">
                       <button type="button" onClick={handleRestart}>
-                        Install on another store →
+                        {t.installAnotherStore}
                       </button>
                     </div>
                   </div>
@@ -480,9 +462,9 @@ export default function InstallWizardPage() {
                 className="faq-trigger"
                 onClick={() => setFaqVisible((v) => !v)}
               >
-                {faqVisible ? 'Hide questions' : 'I have a question'}
+                {faqVisible ? t.hideQuestions : t.haveAQuestion}
               </button>
-              <span className="beta-line">Free during Beta. Available for limited time.</span>
+              <span className="beta-line">{t.betaBadge}</span>
             </div>
 
             {faqVisible && (

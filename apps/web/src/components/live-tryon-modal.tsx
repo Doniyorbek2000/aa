@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 
 export const CWS_URL = '/install';
 
@@ -32,9 +33,10 @@ export function BrandWordmark({ small = false }: { small?: boolean }) {
 }
 
 export function PoweredByA12() {
+  const { t } = useI18n();
   return (
     <span className="powered">
-      Powered by
+      {t.poweredBy}
       <img className="decart-logo" src="/logo.png" alt="A12" width={26} height={26} />
       <span className="powered-brand">A12</span>
     </span>
@@ -93,9 +95,10 @@ export function LiveTryOnModal({
   onClose: () => void;
   initialGarmentUrl?: string | null | undefined;
 }) {
+  const { t } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [connecting, setConnecting] = useState(false);
-  const [statusText, setStatusText] = useState<string>('Connecting…');
+  const [statusText, setStatusText] = useState<string>('');
   const [selectedGarment, setSelectedGarment] = useState<string | null>(null);
   const [garmentsApplied, setGarmentsApplied] = useState(0);
   const [thumbsVisible, setThumbsVisible] = useState<boolean[]>([false, false, false, false]);
@@ -138,25 +141,28 @@ export function LiveTryOnModal({
     });
   }, []);
 
-  const applyGarment = useCallback((url: string) => {
-    setSelectedGarment(url);
-    setStatusText('Dressing…');
+  const applyGarment = useCallback(
+    (url: string) => {
+      setSelectedGarment(url);
+      setStatusText(t.dressingStatus);
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      cleanGarmentRef.current = createCleanGarmentCanvas(img);
-      setTimeout(() => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        cleanGarmentRef.current = createCleanGarmentCanvas(img);
+        setTimeout(() => {
+          setStatusText('');
+          setGarmentsApplied((c) => c + 1);
+        }, 520);
+      };
+      img.onerror = () => {
         setStatusText('');
         setGarmentsApplied((c) => c + 1);
-      }, 520);
-    };
-    img.onerror = () => {
-      setStatusText('');
-      setGarmentsApplied((c) => c + 1);
-    };
-    img.src = url;
-  }, []);
+      };
+      img.src = url;
+    },
+    [t.dressingStatus]
+  );
 
   const startRenderLoop = useCallback(() => {
     if (rafRef.current !== null) {
@@ -225,7 +231,7 @@ export function LiveTryOnModal({
   const startExperience = useCallback(async () => {
     if (connecting) return;
     setConnecting(true);
-    setStatusText('Connecting to the studio…');
+    setStatusText(t.connectingStudio);
 
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -258,7 +264,7 @@ export function LiveTryOnModal({
         }
       }, 450);
     }
-  }, [applyGarment, connecting, initialGarmentUrl, revealGarments, startRenderLoop]);
+  }, [applyGarment, connecting, initialGarmentUrl, revealGarments, startRenderLoop, t.connectingStudio]);
 
   useEffect(() => {
     if (!open) {
@@ -323,7 +329,7 @@ export function LiveTryOnModal({
 
         {/* STEP 1 */}
         <div className={`tstep ${step === 1 ? 'active' : ''}`} id="tstep1">
-          <h3 className="tstep-heading">Turn on your camera.</h3>
+          <h3 className="tstep-heading">{t.modalStep1Heading}</h3>
           <div className="cam-hero">
             <div className="ico">
               <svg
@@ -347,24 +353,21 @@ export function LiveTryOnModal({
               disabled={connecting}
               onClick={startExperience}
             >
-              {connecting ? 'Starting…' : 'Enable camera'}
+              {connecting ? t.startingCamera : t.enableCamera}
             </button>
           </div>
         </div>
 
         {/* STEP 2 */}
         <div className={`tstep ${step === 2 ? 'active' : ''}`} id="tstep2">
-          <h3 className="tstep-heading">Drag a product onto yourself.</h3>
+          <h3 className="tstep-heading">{t.modalStep2Heading}</h3>
           <div className="t-tip">
             <span className="ti">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 2l1.6 6.4a2 2 0 0 0 1.5 1.5L22 12l-6.4 1.6a2 2 0 0 0-1.5 1.5L12 22l-1.6-6.4a2 2 0 0 0-1.5-1.5L2 12l6.4-1.6a2 2 0 0 0 1.5-1.5z" />
               </svg>
             </span>
-            <span className="tt">
-              For best results - remove any thick jacket or outer layer for the most accurate
-              try-on.
-            </span>
+            <span className="tt">{t.modalTip}</span>
           </div>
           <div className="t-s2">
             <div className="t-garments">
@@ -448,20 +451,20 @@ export function LiveTryOnModal({
             id="t-continue"
             onClick={handleContinue}
           >
-            Continue &rarr;
+            {t.continueBtn}
           </button>
         </div>
 
         {/* STEP 3 */}
         <div className={`tstep ${step === 3 ? 'active' : ''}`} id="tstep3">
-          <h3 className="tstep-heading">Install on every online-store.</h3>
+          <h3 className="tstep-heading">{t.modalStep3Heading}</h3>
           <div className="tstep3-inner">
             <a
               className="t-install-btn"
               id="cta-modal-install"
               href={CWS_URL}
             >
-              Add to Chrome
+              {t.addToChrome}
               <svg
                 width="15"
                 height="15"
@@ -487,13 +490,9 @@ export function LiveTryOnModal({
                 src="/assets/tryon-preview.mp4"
               />
             </div>
-            <p className="t-install-sub">
-              Add <strong>A12</strong> to Chrome and this exact try-on appears right on every
-              product page — Zara, ASOS, Amazon and beyond. Drag any item onto yourself and see how
-              it looks before you buy.
-            </p>
+            <p className="t-install-sub">{t.modalStep3Sub}</p>
             <button className="t-restart" type="button" id="t-restart" onClick={handleRestart}>
-              &larr; Try another look
+              {t.tryAnotherLook}
             </button>
           </div>
         </div>

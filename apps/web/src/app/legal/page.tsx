@@ -2,9 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { LanguageSwitcher, useI18n } from '@/lib/i18n';
 import { BrandWordmark, PoweredByA12 } from '@/components/live-tryon-modal';
 
 export default function LegalPage() {
+  const { t } = useI18n();
+
   return (
     <div className="vto-legal-root">
       <style>{`
@@ -42,43 +45,29 @@ export default function LegalPage() {
       <div className="wrap">
         <header className="topbar">
           <BrandWordmark small />
-          <Link className="btn" href="/">
-            Home
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <LanguageSwitcher />
+            <Link className="btn" href="/">
+              {t.navHome}
+            </Link>
+          </div>
         </header>
 
-        <h1>A12 Legal, Privacy &amp; Terms</h1>
+        <h1>{t.legalPageTitle}</h1>
 
         <section id="privacy">
-          <h2>Privacy Policy</h2>
-          <p>
-            A12 processes live camera streams strictly in real time for virtual try-on rendering.
-            Live video frames are never permanently stored, sold, or used to train third-party
-            models.
-          </p>
-          <p>
-            When you enable your camera on A12 (`a12.uz`), video processing happens strictly for
-            the duration of your active try-on session and is terminated immediately when you close
-            the try-on window.
-          </p>
+          <h2>{t.navPrivacy}</h2>
+          <p>{t.privacyBody}</p>
         </section>
 
         <section id="terms">
-          <h2>Terms of Service</h2>
-          <p>
-            By using A12 Virtual Try-On across web, browser extension, or mobile applications, or
-            by embedding the A12 storefront script (`a12.js`) on your online store, you agree to
-            use the service for lawful e-commerce and personal shopping purposes.
-          </p>
+          <h2>{t.navTerms}</h2>
+          <p>{t.termsBody}</p>
         </section>
 
         <section id="aup">
-          <h2>Acceptable Use Policy</h2>
-          <p>
-            Users and merchants may not upload or stream unlawful, harmful, or non-consensual
-            imagery through A12 Virtual Try-On. Automated safety filters enforce acceptable garment
-            and camera stream usage in real time.
-          </p>
+          <h2>{t.navAup}</h2>
+          <p>{t.aupBody}</p>
         </section>
 
         <footer>
@@ -91,4 +80,3 @@ export default function LegalPage() {
     </div>
   );
 }
-
