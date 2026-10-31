@@ -3,8 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
-export const CWS_URL =
-  'https://chromewebstore.google.com/detail/anywear-virtual-try-on/hijnklblgecbdlhjiofhlhjpndpifejh?hl=en-US&utm_source=landing_page&utm_medium=hero_button&utm_campaign=add_to_chrome';
+export const CWS_URL = '/install';
 
 export const DEFAULT_GARMENTS = [
   '/tryon_assets/garment1.png',
@@ -461,8 +460,6 @@ export function LiveTryOnModal({
               className="t-install-btn"
               id="cta-modal-install"
               href={CWS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
             >
               Add to Chrome
               <svg

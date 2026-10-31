@@ -100,8 +100,6 @@ export function AnywearStudioShell() {
                 className="btn btn-primary"
                 id="cta-add-to-chrome"
                 href={CWS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
                 onClick={handleAddToChromeClick}
               >
                 <img
@@ -182,27 +180,9 @@ export function AnywearStudioShell() {
           <nav className="legal" aria-label="Legal">
             <Link href="/virtual-try-on">Virtual Try-On</Link>
             <Link href="/mobile">Mobile App (iOS &amp; Android)</Link>
-            <a
-              href="https://docs.platform.decart.ai/resources/privacy-policy"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Privacy Policy
-            </a>
-            <a
-              href="https://docs.platform.decart.ai/resources/terms-of-service"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Terms of Service
-            </a>
-            <a
-              href="https://docs.platform.decart.ai/resources/aup"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Acceptable Use Policy
-            </a>
+            <Link href="/legal#privacy">Privacy Policy</Link>
+            <Link href="/legal#terms">Terms of Service</Link>
+            <Link href="/legal#aup">Acceptable Use Policy</Link>
           </nav>
         </section>
       </main>
@@ -269,13 +249,8 @@ export function AnywearStudioShell() {
               </div>
             </div>
           </div>
-          <a
-            className="aw-h-store-anyway"
-            href={CWS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Or view it on the Chrome Web Store →
+          <a className="aw-h-store-anyway" href={CWS_URL}>
+            Or continue to A12 Store Setup →
           </a>
         </div>
       </div>

@@ -96,7 +96,7 @@ export default function MobileExperiencePage() {
         .mobile-page-root .spec-card span { font-size: 12.5px; color: var(--muted); }
 
         .mobile-page-root .right-col {
-          background: var(--lav) url('/assets/anywear-gradient.svg') center center / 100% 100% no-repeat;
+          background: var(--lav) url('/assets/a12-gradient.svg') center center / 100% 100% no-repeat;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           padding: 44px 28px;
         }

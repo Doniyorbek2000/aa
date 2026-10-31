@@ -5,7 +5,7 @@ import {
   parseProductUrlToGarment,
 } from '../../../../packages/shared-core/src/index.ts';
 
-describe('A12 Anywear Shared Core & URL Garment Parser', () => {
+describe('A12 Shared Core & URL Garment Parser', () => {
   it('provides a rich initial garment catalog with 30 FPS physics parameters', () => {
     assert.ok(INITIAL_GARMENT_CATALOG.length >= 6);
     for (const item of INITIAL_GARMENT_CATALOG) {

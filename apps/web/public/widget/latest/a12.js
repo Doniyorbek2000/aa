@@ -1,1 +1,32 @@
-window.__decartCtx={platform:"web"},function(){for(var e=document.getElementsByTagName("script"),r="",t=e.length-1;t>=0;t--)if((e[t].src||"").includes("anywear.js")){r=e[t].src;break}!r&&document.currentScript&&(r=document.currentScript.src);var n=r.replace(/\/anywear\.js(\?.*)?$/,"");function o(e,r){var t=document.createElement("script");t.src=e,t.onload=r,document.head.appendChild(t)}o(n+"/crash_reports.js",function(){o(n+"/button-detector.js",function(){var e=/(^|\.)((revolve|ugg|uniqlo|loropiana)\.com|guess\.(com|eu)|factory54\.co\.il)$/i,r=["revolve.js","ugg.js","guess.js","factory54.js","uniqlo.js","loropiana.js","per_website_garment_filter.js"];!function(t){if(!e.test(location.hostname))return t();for(var o=r.length,a=function(){0===--o&&t()},c=0;c<r.length;c++){var i=document.createElement("script");i.src=n+"/"+r[c],i.onload=a,i.onerror=a,document.head.appendChild(i)}}(function(){o(n+"/widget-core.js",function(){DecartWidget.init({widgetUrl:n+"/widget.html",shouldInject:function(){return!0},isProductPage:function(){for(var e=document.querySelectorAll('script[type="application/ld+json"]'),r=0;r<e.length;r++)try{for(var t=JSON.parse(e[r].textContent),n=t["@graph"]||(Array.isArray(t)?t:[t]),o=0;o<n.length;o++){var a=n[o]["@type"],c=Array.isArray(a)?a:[a];if(c.indexOf("Product")>=0||c.indexOf("ProductGroup")>=0)return!0}}catch(e){}return!1},getCameraGranted:function(){try{if("1"===localStorage.getItem("_decart_cam_granted"))return Promise.resolve(!0)}catch(e){}return navigator.permissions?navigator.permissions.query({name:"camera"}).then(function(e){return"granted"===e.state}).catch(function(){return!1}):Promise.resolve(!1)},isDevMode:!1})})})})})}();
+(function () {
+  if (window.__A12_VTON_WIDGET_LOADED__) return;
+  window.__A12_VTON_WIDGET_LOADED__ = true;
+  var ORIGIN = 'https://a12.uz';
+  function injectButtons() {
+    var imgs = document.querySelectorAll('img');
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i];
+      if (img.dataset.a12Pinned || img.width < 120 || img.height < 120) continue;
+      img.dataset.a12Pinned = '1';
+      var btn = document.createElement('a');
+      btn.href = ORIGIN + '/?try=1';
+      btn.target = '_blank';
+      btn.rel = 'noopener noreferrer';
+      btn.textContent = '✨ A12 Try-On';
+      btn.style.cssText =
+        'position:absolute;top:10px;right:10px;z-index:999;padding:6px 12px;border-radius:999px;background:#fffffc;color:#170404;border:1px solid rgba(23,4,4,0.18);font:500 12px/1 sans-serif;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);';
+      var parent = img.parentElement;
+      if (parent) {
+        if (getComputedStyle(parent).position === 'static') {
+          parent.style.position = 'relative';
+        }
+        parent.appendChild(btn);
+      }
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectButtons);
+  } else {
+    injectButtons();
+  }
+})();

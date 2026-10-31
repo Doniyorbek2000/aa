@@ -103,8 +103,8 @@ export const DEFAULT_GARMENT: GarmentItem = {
   brand: 'A12 ATELIER',
   category: 'outerwear',
   price: '$280',
-  sourceUrl: 'https://anywear.decart.ai/catalog/a12-cyber-trench',
-  storeDomain: 'a12.atelier',
+  sourceUrl: 'https://a12.uz/catalog/a12-cyber-trench',
+  storeDomain: 'a12.uz',
   primaryColor: '#0f172a',
   secondaryColor: '#0284c7',
   accentColor: '#38bdf8',
@@ -118,13 +118,13 @@ export const DEFAULT_GARMENT: GarmentItem = {
 export const INITIAL_GARMENT_CATALOG: GarmentItem[] = [
   DEFAULT_GARMENT,
   {
-    id: 'decart-velvet-blazer',
+    id: 'a12-velvet-blazer',
     name: {
       uz: 'Emerald Baxmal Oversize Pidjak',
       en: 'Emerald Velvet Oversized Blazer',
       ru: 'Изумрудный Бархатный Блейзер',
     },
-    brand: 'MAISON DECART',
+    brand: 'MAISON A12',
     category: 'formal',
     price: '$340',
     sourceUrl: 'https://zara.com/emerald-velvet-blazer',

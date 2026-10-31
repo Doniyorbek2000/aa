@@ -131,15 +131,10 @@ export default function VirtualTryOnPillarPage() {
             frame rate, which is why the hem swings when you do.
           </p>
           <div className="cta">
-            <a
-              className="btn btn-primary"
-              href={CWS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <Link className="btn btn-primary" href={CWS_URL}>
               <img src="/assets/chrome.svg" alt="" aria-hidden="true" width={20} height={20} />
               Add to Chrome — free
-            </a>
+            </Link>
             <Link className="btn btn-secondary" href="/?try=1">
               Try it without installing
             </Link>

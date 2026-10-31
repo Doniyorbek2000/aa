@@ -250,7 +250,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 48px 40px 76px;
-  background: var(--lav) url('/assets/anywear-gradient.svg') center center / 100% 100% no-repeat;
+  background: var(--lav) url('/assets/a12-gradient.svg') center center / 100% 100% no-repeat;
 }
 
 .stack {

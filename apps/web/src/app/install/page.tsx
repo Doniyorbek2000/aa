@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BrandWordmark, CWS_URL, PoweredByA12 } from '@/components/live-tryon-modal';
+import { BrandWordmark, PoweredByA12 } from '@/components/live-tryon-modal';
 
 type PlatformType = 'shopify' | 'woo' | 'any';
 
@@ -269,12 +269,7 @@ export default function InstallWizardPage() {
       <header className="topbar">
         <div className="wrap topbar-in">
           <BrandWordmark small />
-          <a
-            className="btn btn-secondary btn-sm"
-            href={CWS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <Link className="btn btn-secondary btn-sm" href="/?try=1">
             <img
               className="chrome-ico"
               src="/assets/chrome.svg"
@@ -284,7 +279,7 @@ export default function InstallWizardPage() {
               height={20}
             />
             See it on my store
-          </a>
+          </Link>
         </div>
       </header>
 

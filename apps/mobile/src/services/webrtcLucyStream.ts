@@ -34,7 +34,7 @@ export class A12MobileLucyStreamClient {
     this.callbacks = callbacks;
   }
 
-  public async connect(signalingEndpoint = 'wss://edge.a12-anywear.ai/v1/webrtc'): Promise<void> {
+  public async connect(signalingEndpoint = 'wss://a12.uz/v1/webrtc'): Promise<void> {
     this.callbacks.onConnectionStateChange('connecting');
 
     // Establish WebRTC DataChannel & MediaStream negotiation

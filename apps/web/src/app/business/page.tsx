@@ -153,7 +153,7 @@ export default function BusinessOnePagerPage() {
 
         .one-pager-root .frame {
           border-radius: 18px; padding: clamp(16px, 2vw, 26px);
-          background: var(--lav) url('/assets/anywear-gradient.svg') center center / cover no-repeat;
+          background: var(--lav) url('/assets/a12-gradient.svg') center center / cover no-repeat;
           display: flex; justify-content: center;
         }
         .one-pager-root .frame img { border-radius: 12px; box-shadow: 0 26px 70px -22px rgba(74,18,40,0.45), 0 8px 24px rgba(30,0,15,0.14); }
@@ -417,7 +417,7 @@ export default function BusinessOnePagerPage() {
         </div>
       </header>
 
-      {/* ═══ BEAT 1 — Here is Anywear ═══ */}
+      {/* ═══ BEAT 1 — Here is A12 ═══ */}
       <section className="hero">
         <div className="wrap hero-grid">
           <div>
@@ -663,14 +663,9 @@ export default function BusinessOnePagerPage() {
               <p>
                 Seamless: <strong>no work for your engineers</strong>. On Shopify it&rsquo;s one
                 click from the{' '}
-                <a
-                  href="https://apps.shopify.com/anywear-virtual-try-on"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'inherit' }}
-                >
+                <Link href="/install" style={{ color: 'inherit' }}>
                   App&nbsp;Store
-                </a>
+                </Link>
                 . Anywhere else, paste one line before <code>&lt;/body&gt;</code>:
               </p>
 
@@ -795,12 +790,7 @@ export default function BusinessOnePagerPage() {
             yet.
           </p>
           <div className="vq-grid">
-            <a
-              className="vq"
-              href="https://x.com/crislenta/status/2084926197130027510"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a className="vq" href="#demo">
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/crislenta.jpg"
@@ -817,12 +807,7 @@ export default function BusinessOnePagerPage() {
                 </span>
               </span>
             </a>
-            <a
-              className="vq"
-              href="https://www.tiktok.com/@evisdrenova/video/7671078195805883661"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a className="vq" href="#demo">
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/evisdrenova.jpg"
@@ -839,12 +824,7 @@ export default function BusinessOnePagerPage() {
                 </span>
               </span>
             </a>
-            <a
-              className="vq"
-              href="https://x.com/sofiasofian/status/2085282205316628791"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a className="vq" href="#demo">
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/sofiasofian.jpg"
@@ -861,12 +841,7 @@ export default function BusinessOnePagerPage() {
                 </span>
               </span>
             </a>
-            <a
-              className="vq"
-              href="https://x.com/DevonFrohne/status/2085435563650462069"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a className="vq" href="#demo">
               <span className="vq-shot">
                 <img
                   src="/assets/reactions/devonfrohne.jpg"
@@ -893,20 +868,8 @@ export default function BusinessOnePagerPage() {
           <nav className="legal" aria-label="Legal">
             <Link href="/virtual-try-on">Virtual Try-On</Link>
             <Link href="/mobile">Mobile App</Link>
-            <a
-              href="https://docs.platform.decart.ai/resources/privacy-policy"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Privacy Policy
-            </a>
-            <a
-              href="https://docs.platform.decart.ai/resources/terms-of-service"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Terms of Service
-            </a>
+            <Link href="/legal#privacy">Privacy Policy</Link>
+            <Link href="/legal#terms">Terms of Service</Link>
             <Link href="/">a12.uz</Link>
           </nav>
         </div>
@@ -971,12 +934,7 @@ export default function BusinessOnePagerPage() {
                   eyes only.
                 </p>
                 <div className="sheet-cta">
-                  <a
-                    className="btn btn-primary"
-                    href={CWS_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a className="btn btn-primary" href={CWS_URL}>
                     <img
                       className="chrome-ico"
                       src="/assets/chrome.svg"
