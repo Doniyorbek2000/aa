@@ -337,6 +337,78 @@ export function LiveTryOnModal({
     }
   }, []);
 
+  const captureCleanPersonFrame = useCallback((): string => {
+    const camVid = camVideoRef.current;
+    if (camVid && camVid.readyState >= 2 && streamRef.current) {
+      const off = document.createElement('canvas');
+      off.width = 768;
+      off.height = 1024;
+      const ctx = off.getContext('2d');
+      if (ctx) {
+        ctx.translate(off.width, 0);
+        ctx.scale(-1, 1);
+        const vw = camVid.videoWidth || 1280;
+        const vh = camVid.videoHeight || 720;
+        const scale = Math.max(off.width / vw, off.height / vh);
+        const dw = vw * scale;
+        const dh = vh * scale;
+        ctx.drawImage(camVid, (off.width - dw) / 2, (off.height - dh) / 2, dw, dh);
+        return off.toDataURL('image/jpeg', 0.86);
+      }
+    }
+    return 'https://a12.uz/assets/hero-tryon-poster.jpg';
+  }, []);
+
+  const runOpenSourceNeuralTryOn = useCallback(
+    async (modelId: OpenSourceEngineId, garmentOverride?: string) => {
+      setActiveModel(modelId);
+      if (modelId === 'a12-pose-mesh') {
+        setHdNeuralActive(false);
+        setNeuralResultUrl(null);
+        return;
+      }
+
+      const targetGarment = garmentOverride ?? selectedGarment ?? DEFAULT_GARMENTS[0];
+      if (!targetGarment) return;
+      if (!selectedGarment) {
+        setSelectedGarment(targetGarment);
+      }
+
+      setHdNeuralActive(true);
+      setStatusText(
+        modelId === 'idm-vton'
+          ? 'IDM-VTON (Hugging Face GPU)…'
+          : 'OOTDiffusion HD (Hugging Face GPU)…'
+      );
+
+      try {
+        const personFrame = captureCleanPersonFrame();
+        const res = await fetch('/api/tryon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'neural-tryon',
+            modelId,
+            personFrame,
+            garmentImage: targetGarment,
+          }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { resultImage?: string | null };
+          if (data.resultImage) {
+            setNeuralResultUrl(data.resultImage);
+            setGarmentsApplied((c) => c + 1);
+          }
+        }
+      } catch {
+        // Fallback to real-time HD neural cloth shader seamlessly
+      } finally {
+        setStatusText('');
+      }
+    },
+    [captureCleanPersonFrame, selectedGarment]
+  );
+
   const applyGarment = useCallback(
     (url: string) => {
       setSelectedGarment(url);
@@ -357,56 +429,12 @@ export function LiveTryOnModal({
         setGarmentsApplied((c) => c + 1);
       };
       img.src = url;
-    },
-    [t.dressingStatus]
-  );
 
-  const runOpenSourceNeuralTryOn = useCallback(
-    async (modelId: OpenSourceEngineId) => {
-      setActiveModel(modelId);
-      if (modelId === 'a12-pose-mesh') {
-        setHdNeuralActive(false);
-        setNeuralResultUrl(null);
-        return;
-      }
-
-      setHdNeuralActive(true);
-      const canvas = canvasRef.current;
-      if (!canvas || !selectedGarment) return;
-
-      setStatusText(
-        modelId === 'idm-vton'
-          ? 'IDM-VTON Neural Fit…'
-          : modelId === 'cat-vton'
-          ? 'CatVTON Neural Fit…'
-          : 'OOTDiffusion Neural Fit…'
-      );
-
-      try {
-        const personFrame = canvas.toDataURL('image/jpeg', 0.82);
-        const res = await fetch('/api/tryon', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode: 'neural-tryon',
-            modelId,
-            personFrame,
-            garmentImage: selectedGarment,
-          }),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { resultImage?: string | null };
-          if (data.resultImage) {
-            setNeuralResultUrl(data.resultImage);
-          }
-        }
-      } catch {
-        // Fallback to real-time HD neural cloth shader seamlessly
-      } finally {
-        setTimeout(() => setStatusText(''), 380);
+      if (activeModel !== 'a12-pose-mesh') {
+        void runOpenSourceNeuralTryOn(activeModel, url);
       }
     },
-    [selectedGarment]
+    [activeModel, runOpenSourceNeuralTryOn, t.dressingStatus]
   );
 
   const startRenderLoop = useCallback(() => {
@@ -663,8 +691,8 @@ export function LiveTryOnModal({
               {(
                 [
                   { id: 'a12-pose-mesh', label: '⚡ A12 Pose-Mesh 30 FPS' },
-                  { id: 'idm-vton', label: '✨ IDM-VTON (HF Open-Source)' },
-                  { id: 'cat-vton', label: '✨ CatVTON (HF Open-Source)' },
+                  { id: 'idm-vton', label: '✨ IDM-VTON (HF GPU)' },
+                  { id: 'oot-diffusion', label: '✨ OOTDiffusion HD (HF GPU)' },
                 ] as const
               ).map((m) => {
                 const isActive = activeModel === m.id;

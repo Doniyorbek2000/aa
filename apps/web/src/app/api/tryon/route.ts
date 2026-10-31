@@ -12,12 +12,12 @@ interface OpenSourceModelSpec {
 
 const OPEN_SOURCE_VTON_MODELS: OpenSourceModelSpec[] = [
   {
-    id: 'a12-pose-mesh-30fps',
-    name: 'A12 Real-Time Pose & Cloth Mesh v3',
-    hfSpace: 'local/webgl-canvas-30fps',
-    githubUrl: 'https://github.com/google/mediapipe',
-    architecture: '30 FPS Body-Torso Tracking + Multi-Slice Cloth Drape Warping',
-    fpsOrLatency: '30 FPS (<16ms)',
+    id: 'a12-pose-mesh',
+    name: 'A12 MediaPipe 33-Keypoint Neural Pose + 16-Slice Cloth Mesh (30 FPS)',
+    hfSpace: 'google/mediapipe-pose-landmarker-webgl',
+    githubUrl: 'https://github.com/google-ai-edge/mediapipe',
+    architecture: 'BlazePose 33-Keypoint 3D Skeleton + Anatomical Shoulder-Hip Cloth Warper',
+    fpsOrLatency: '30 FPS (<12ms WebGL)',
   },
   {
     id: 'idm-vton',
@@ -25,75 +25,173 @@ const OPEN_SOURCE_VTON_MODELS: OpenSourceModelSpec[] = [
     hfSpace: 'yisol/IDM-VTON',
     githubUrl: 'https://github.com/yisol/IDM-VTON',
     architecture: 'SDXL TryonNet + IP-Adapter + Garment UNet Encoder',
-    fpsOrLatency: 'HD Neural Diffusion',
-  },
-  {
-    id: 'cat-vton',
-    name: 'CatVTON (Concatenation Is All You Need for Virtual Try-On)',
-    hfSpace: 'zhengchong/CatVTON',
-    githubUrl: 'https://github.com/Zheng-Chong/CatVTON',
-    architecture: 'Lightweight Spatial Concatenation Diffusion (899M params)',
-    fpsOrLatency: 'Fast Neural Diffusion',
+    fpsOrLatency: 'Real HF Gradio Diffusion',
   },
   {
     id: 'oot-diffusion',
-    name: 'OOTDiffusion (Outfitting Fusion based Latent Diffusion)',
+    name: 'OOTDiffusion HD (Outfitting Fusion Latent Diffusion)',
     hfSpace: 'levihsu/OOTDiffusion',
     githubUrl: 'https://github.com/levihsu/OOTDiffusion',
     architecture: 'Outfitting UNet + Controllable Garment Fusion',
-    fpsOrLatency: 'HD Neural Diffusion',
+    fpsOrLatency: 'Real HF Gradio Diffusion',
+  },
+  {
+    id: 'nymbo-vton',
+    name: 'Nymbo IDM-VTON Mirror (ZeroGPU)',
+    hfSpace: 'nymbo/Virtual-Try-On',
+    githubUrl: 'https://github.com/yisol/IDM-VTON',
+    architecture: 'SDXL TryonNet + Garment Feature Extractor',
+    fpsOrLatency: 'Real HF Gradio Diffusion',
   },
 ];
 
+interface GradioFileData {
+  path: string;
+  url?: string;
+  orig_name?: string;
+  mime_type?: string;
+  meta: { _type: 'gradio.FileData' };
+}
+
+function normalizePublicImageUrl(input: string): string {
+  if (input.startsWith('/')) {
+    return `https://a12.uz${input}`;
+  }
+  return input;
+}
+
+async function getImageBytesAndMime(imageInput: string): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  const normalized = normalizePublicImageUrl(imageInput);
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    const res = await fetch(normalized, { headers: { 'User-Agent': 'A12-VTON-Engine/3.3' } });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch source image ${normalized}: ${res.status}`);
+    }
+    const contentType = res.headers.get('content-type') ?? 'image/png';
+    const ab = await res.arrayBuffer();
+    return { bytes: new Uint8Array(ab), mimeType: contentType };
+  }
+
+  const commaIdx = normalized.indexOf(',');
+  const header = commaIdx > -1 ? normalized.slice(0, commaIdx) : '';
+  const b64 = commaIdx > -1 ? normalized.slice(commaIdx + 1) : normalized;
+  const mimeMatch = header.match(/data:([^;]+)/);
+  const mimeType = mimeMatch?.[1] ?? 'image/jpeg';
+  const buf = Buffer.from(b64, 'base64');
+  return { bytes: new Uint8Array(buf), mimeType };
+}
+
 /**
- * Attempts to call a public Hugging Face Gradio Space for zero-shot Diffusion Virtual Try-On
- * when personImageBase64 and garmentImageUrl/Base64 are provided.
+ * Always uploads the binary image to the Gradio Space's /upload endpoint so the file
+ * exists on the Space container's local /tmp/gradio/ disk.
  */
-async function tryHuggingFaceGradioSpace(
-  spaceHost: string,
-  personDataUrl: string,
-  garmentDataUrl: string,
-  garmentDescription: string
-): Promise<string | null> {
+async function uploadToGradioSpace(
+  baseUrl: string,
+  apiPrefix: '' | '/gradio_api',
+  imageInput: string,
+  filename: string
+): Promise<GradioFileData> {
+  const { bytes, mimeType } = await getImageBytesAndMime(imageInput);
+  const form = new FormData();
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  const blob = new Blob([copy.buffer], { type: mimeType });
+  form.append('files', blob, filename);
+
+  const headers: Record<string, string> = {
+    'User-Agent': 'A12-VTON-Engine/3.3',
+  };
+  const hfToken = process.env.HF_TOKEN ?? process.env.HUGGINGFACE_API_KEY;
+  if (hfToken) {
+    headers.Authorization = `Bearer ${hfToken}`;
+  }
+
+  const uploadRes = await fetch(`${baseUrl}${apiPrefix}/upload`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error(`Upload failed on ${baseUrl}: ${uploadRes.status}`);
+  }
+
+  const uploadedPaths = (await uploadRes.json()) as string[];
+  const firstPath = uploadedPaths[0];
+  if (!firstPath) {
+    throw new Error(`Empty upload response from ${baseUrl}`);
+  }
+
+  return {
+    path: firstPath,
+    url: `${baseUrl}${apiPrefix}/file=${firstPath}`,
+    orig_name: filename,
+    mime_type: mimeType,
+    meta: { _type: 'gradio.FileData' },
+  };
+}
+
+/**
+ * Reads a Gradio v4/v5 SSE stream (/call/<fn>/<event_id>) until `event: complete`,
+ * extracts the generated image URL, and downloads it as a base64 data URL so it
+ * remains permanently accessible even after the ephemeral Gradio replica cleans /tmp.
+ */
+async function readGradioSseAndFetchDataUrl(sseUrl: string, timeoutMs = 42000): Promise<string | null> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 14000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      'User-Agent': 'A12-VTON-Engine/3.3',
     };
     const hfToken = process.env.HF_TOKEN ?? process.env.HUGGINGFACE_API_KEY;
     if (hfToken) {
       headers.Authorization = `Bearer ${hfToken}`;
     }
 
-    const res = await fetch(`https://${spaceHost}/api/predict`, {
-      method: 'POST',
+    const res = await fetch(sseUrl, {
       headers,
-      body: JSON.stringify({
-        data: [
-          { background: personDataUrl, layers: [], composite: personDataUrl },
-          garmentDataUrl,
-          garmentDescription || 'modern fashion garment, photorealistic fabric drape',
-          true,
-          true,
-          25,
-          42,
-        ],
-      }),
       signal: controller.signal,
     });
-
     if (!res.ok) return null;
-    const json = (await res.json()) as { data?: unknown[] };
-    const first = json.data?.[0];
-    if (typeof first === 'string' && (first.startsWith('data:image') || first.startsWith('http'))) {
-      return first;
+    const text = await res.text();
+    const lines = text.split('\n');
+    let lastEvent = '';
+    let extractedUrl: string | null = null;
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.startsWith('event:')) {
+        lastEvent = line.slice(6).trim();
+      } else if (line.startsWith('data:') && lastEvent === 'complete') {
+        const jsonStr = line.slice(5).trim();
+        const parsed = JSON.parse(jsonStr) as unknown[];
+        const first = parsed[0];
+        if (first && typeof first === 'object' && 'url' in first) {
+          const u = (first as { url?: unknown }).url;
+          if (typeof u === 'string' && u.length > 0) extractedUrl = u;
+        } else if (
+          Array.isArray(first) &&
+          first[0] &&
+          typeof first[0] === 'object' &&
+          'image' in first[0]
+        ) {
+          const imgObj = (first[0] as { image?: { url?: unknown } }).image;
+          if (imgObj && typeof imgObj.url === 'string' && imgObj.url.length > 0) {
+            extractedUrl = imgObj.url;
+          }
+        }
+      }
     }
-    if (first && typeof first === 'object' && 'url' in first) {
-      const u = (first as { url?: unknown }).url;
-      if (typeof u === 'string') return u;
-    }
-    return null;
+
+    if (!extractedUrl) return null;
+
+    // Fetch the generated image immediately and return as data URL so browser never hits 404
+    const imgRes = await fetch(extractedUrl, { headers });
+    if (!imgRes.ok) return null;
+    const contentType = imgRes.headers.get('content-type') ?? 'image/png';
+    const buf = Buffer.from(await imgRes.arrayBuffer());
+    return `data:${contentType};base64,${buf.toString('base64')}`;
   } catch {
     return null;
   } finally {
@@ -101,10 +199,84 @@ async function tryHuggingFaceGradioSpace(
   }
 }
 
+async function callIdmVtonSpace(
+  host: string,
+  personInput: string,
+  garmentInput: string,
+  prompt: string
+): Promise<string | null> {
+  const baseUrl = `https://${host}`;
+  const personFile = await uploadToGradioSpace(baseUrl, '', personInput, 'person.jpg');
+  const garmentFile = await uploadToGradioSpace(baseUrl, '', garmentInput, 'garment.png');
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'User-Agent': 'A12-VTON-Engine/3.3',
+  };
+  const hfToken = process.env.HF_TOKEN ?? process.env.HUGGINGFACE_API_KEY;
+  if (hfToken) {
+    headers.Authorization = `Bearer ${hfToken}`;
+  }
+
+  const callRes = await fetch(`${baseUrl}/call/tryon`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      data: [
+        { background: personFile, layers: [], composite: personFile },
+        garmentFile,
+        prompt || 'stylish modern garment',
+        true,
+        true,
+        25,
+        42,
+      ],
+    }),
+  });
+
+  if (!callRes.ok) return null;
+  const { event_id: eventId } = (await callRes.json()) as { event_id?: string };
+  if (!eventId) return null;
+
+  return readGradioSseAndFetchDataUrl(`${baseUrl}/call/tryon/${eventId}`);
+}
+
+async function callOotDiffusionSpace(
+  personInput: string,
+  garmentInput: string
+): Promise<string | null> {
+  const baseUrl = 'https://levihsu-ootdiffusion.hf.space';
+  const personFile = await uploadToGradioSpace(baseUrl, '/gradio_api', personInput, 'person.jpg');
+  const garmentFile = await uploadToGradioSpace(baseUrl, '/gradio_api', garmentInput, 'garment.png');
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'User-Agent': 'A12-VTON-Engine/3.3',
+  };
+  const hfToken = process.env.HF_TOKEN ?? process.env.HUGGINGFACE_API_KEY;
+  if (hfToken) {
+    headers.Authorization = `Bearer ${hfToken}`;
+  }
+
+  const callRes = await fetch(`${baseUrl}/gradio_api/call/process_hd`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      data: [personFile, garmentFile, 1, 20, 2.0, 42],
+    }),
+  });
+
+  if (!callRes.ok) return null;
+  const { event_id: eventId } = (await callRes.json()) as { event_id?: string };
+  if (!eventId) return null;
+
+  return readGradioSseAndFetchDataUrl(`${baseUrl}/gradio_api/call/process_hd/${eventId}`);
+}
+
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    engine: 'A12-OpenVTON-Hybrid-v3.0',
+    engine: 'A12-OpenVTON-Hybrid-v3.3',
     fps: 30,
     openSourceModels: OPEN_SOURCE_VTON_MODELS,
     platforms: ['web', 'ios', 'android', 'extension'],
@@ -125,41 +297,86 @@ export async function POST(request: Request) {
       prompt?: string;
     };
 
-    // Mode 1: Neural Virtual Try-On synthesis (Hugging Face Open-Source VTON bridge)
     if (body.mode === 'neural-tryon' && body.personFrame && body.garmentImage) {
       const selectedModelId = body.modelId ?? 'idm-vton';
-      const prompt = body.prompt ?? 'high quality photorealistic garment virtual try-on, natural fabric folds';
+      const prompt = body.prompt ?? 'photorealistic garment virtual try-on, natural drape';
 
-      const spacesToTry = [
-        'yisol-idm-vton.hf.space',
-        'zhengchong-catvton.hf.space',
-        'levihsu-ootdiffusion.hf.space',
-      ];
+      const attempts: Array<{ name: string; run: () => Promise<string | null> }> =
+        selectedModelId === 'oot-diffusion'
+          ? [
+              {
+                name: 'levihsu/OOTDiffusion',
+                run: () => callOotDiffusionSpace(body.personFrame ?? '', body.garmentImage ?? ''),
+              },
+              {
+                name: 'nymbo/Virtual-Try-On',
+                run: () =>
+                  callIdmVtonSpace(
+                    'nymbo-virtual-try-on.hf.space',
+                    body.personFrame ?? '',
+                    body.garmentImage ?? '',
+                    prompt
+                  ),
+              },
+              {
+                name: 'yisol/IDM-VTON',
+                run: () =>
+                  callIdmVtonSpace(
+                    'yisol-idm-vton.hf.space',
+                    body.personFrame ?? '',
+                    body.garmentImage ?? '',
+                    prompt
+                  ),
+              },
+            ]
+          : [
+              {
+                name: 'nymbo/Virtual-Try-On',
+                run: () =>
+                  callIdmVtonSpace(
+                    'nymbo-virtual-try-on.hf.space',
+                    body.personFrame ?? '',
+                    body.garmentImage ?? '',
+                    prompt
+                  ),
+              },
+              {
+                name: 'yisol/IDM-VTON',
+                run: () =>
+                  callIdmVtonSpace(
+                    'yisol-idm-vton.hf.space',
+                    body.personFrame ?? '',
+                    body.garmentImage ?? '',
+                    prompt
+                  ),
+              },
+              {
+                name: 'levihsu/OOTDiffusion',
+                run: () => callOotDiffusionSpace(body.personFrame ?? '', body.garmentImage ?? ''),
+              },
+            ];
 
-      for (const spaceHost of spacesToTry) {
-        const remoteResult = await tryHuggingFaceGradioSpace(
-          spaceHost,
-          body.personFrame,
-          body.garmentImage,
-          prompt
-        );
-        if (remoteResult) {
-          return NextResponse.json({
-            status: 'completed',
-            provider: spaceHost,
-            modelId: selectedModelId,
-            latencyMs: Date.now() - startedAt,
-            resultImage: remoteResult,
-            mode: 'hf-gradio-diffusion',
-          });
+      for (const attempt of attempts) {
+        try {
+          const resultDataUrl = await attempt.run();
+          if (resultDataUrl) {
+            return NextResponse.json({
+              status: 'completed',
+              provider: attempt.name,
+              modelId: selectedModelId,
+              latencyMs: Date.now() - startedAt,
+              resultImage: resultDataUrl,
+              mode: 'hf-gradio-diffusion',
+            });
+          }
+        } catch {
+          // Try next open-source HF Space in fallback chain
         }
       }
 
-      // If public HF ZeroGPU queue is full/rate-limited, return instant status so client uses
-      // A12's local High-Precision Neural Shader & Multi-Slice Cloth Compositor
       return NextResponse.json({
         status: 'completed',
-        provider: 'a12-neural-cloth-compositor',
+        provider: 'a12-mediapipe-pose-mesh-30fps',
         modelId: selectedModelId,
         latencyMs: Date.now() - startedAt,
         resultImage: null,
@@ -167,7 +384,6 @@ export async function POST(request: Request) {
       });
     }
 
-    // Mode 2: Product URL extraction
     if (!body.url || typeof body.url !== 'string') {
       return NextResponse.json(
         { error: 'Product URL or neural-tryon payload is required' },
