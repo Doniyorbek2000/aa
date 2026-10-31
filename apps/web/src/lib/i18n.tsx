@@ -1643,27 +1643,39 @@ export function LanguageSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Select language"
+        aria-label={`Select language (${current.nativeName})`}
+        title={current.nativeName}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '6px',
-          height: '36px',
-          padding: '0 12px',
-          borderRadius: '999px',
-          border: '1px solid rgba(23, 4, 4, 0.16)',
-          background: 'rgba(255, 255, 252, 0.92)',
-          color: '#170404',
-          fontSize: '13px',
-          fontWeight: 500,
+          justifyContent: 'center',
+          width: '38px',
+          height: '38px',
+          padding: 0,
+          borderRadius: '50%',
+          border: open ? '1.5px solid #170404' : '1px solid rgba(23, 4, 4, 0.16)',
+          background: open ? '#170404' : 'rgba(255, 255, 252, 0.92)',
+          color: open ? '#fffffc' : '#170404',
           cursor: 'pointer',
-          fontFamily: 'inherit',
-          boxShadow: '0 2px 8px rgba(23, 4, 4, 0.05)',
+          boxShadow: '0 2px 8px rgba(23, 4, 4, 0.06)',
+          transition: 'background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.16s ease',
         }}
       >
-        <span aria-hidden="true">{current.flag}</span>
-        <span>{current.nativeName}</span>
-        <span style={{ fontSize: '10px', opacity: 0.65 }}>▾</span>
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
       </button>
 
       {open && (
