@@ -2,7 +2,6 @@
  * "See it in your room": a room photo plus a product photo go to Decart's Lucy Image 2, which
  * returns the room with the product placed in it ($0.02 per 720p image).
  */
-export const SPACE_MODEL = 'lucy-image-2';
 export const SPACE_KINDS = ['furniture', 'decor', 'lighting', 'rug'] as const;
 export type SpaceKind = (typeof SPACE_KINDS)[number];
 

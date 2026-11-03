@@ -35,6 +35,7 @@ export function SpaceStudio({ initialProductUrl, initialKind, storeKey }: Props)
   const [kind, setKind] = useState<SpaceKind>(initialKind);
   const [placement, setPlacement] = useState('');
   const [result, setResult] = useState<string | null>(null);
+  const [resultName, setResultName] = useState('a12-xonam.png');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,7 +85,9 @@ export function SpaceStudio({ initialProductUrl, initialKind, storeKey }: Props)
         setError(data.error ?? 'Hozircha natija olib bo‘lmadi, birozdan so‘ng urinib ko‘ring.');
         return;
       }
-      setResult(URL.createObjectURL(await res.blob()));
+      const blob = await res.blob();
+      setResultName(`a12-xonam.${blob.type === 'image/jpeg' ? 'jpg' : 'png'}`);
+      setResult(URL.createObjectURL(blob));
     } catch {
       setError('Internet aloqasini tekshirib, qayta urinib ko‘ring.');
     } finally {
@@ -130,7 +133,7 @@ export function SpaceStudio({ initialProductUrl, initialKind, storeKey }: Props)
           <h2>Natija</h2>
           <img src={result} alt="Mahsulot xonangizda" style={{ width: '100%', borderRadius: 12 }} />
           <div className="form-row">
-            <a className="btn" href={result} download="a12-xonam.jpg" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Yuklab olish</a>
+            <a className="btn" href={result} download={resultName} style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Yuklab olish</a>
             <button className="btn btn-ghost" type="button" onClick={() => void render()} disabled={isBusy}>Boshqa variant</button>
           </div>
           <p className="muted">Rasm AI tomonidan yaratilgan — o‘lcham va rang taxminiy.</p>

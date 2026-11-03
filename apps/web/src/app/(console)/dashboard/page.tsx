@@ -33,7 +33,16 @@ export default async function DashboardPage() {
     <>
       <ConsoleHeader user={user} />
       <main className="console-main">
-        <h1>Do‘konim</h1>
+        <div className="form-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>Do‘konim</h1>
+          {rows.length > 0 && (
+            <div className="form-row">
+              <a className="btn btn-ghost" href="/dashboard/studio" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Fotostudiya</a>
+              <a className="btn btn-ghost" href="/dashboard/live" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Jonli efir</a>
+              <a className="btn btn-ghost" href="/dashboard/video" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Video reklama</a>
+            </div>
+          )}
+        </div>
         {rows.length === 0 && (
           <p className="notice">
             Sizning raqamingizga hali do‘kon ulanmagan. Do‘koningizni A12 ga ulash uchun biz bilan bog‘laning — ulangandan keyin shu

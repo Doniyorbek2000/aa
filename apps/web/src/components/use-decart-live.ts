@@ -65,15 +65,25 @@ export function useDecartLive() {
   }, []);
 
   const start = useCallback(
-    async (camera: MediaStream, storeKey?: string | null) => {
+    async (camera: MediaStream, storeKey?: string | null, options?: { source?: 'live-shop'; autoRenew?: boolean }) => {
       if (stateRef.current === 'connecting' || stateRef.current === 'live') return;
       stateRef.current = 'connecting';
+      const source = options?.source ?? (storeKey ? 'widget' : 'web');
+      // A session ends at its cap; a live broadcast opens the next one so the show goes on
+      const renew = () => {
+        stateRef.current = 'unavailable';
+        clientRef.current = null;
+        if (options?.autoRenew && camera.active) {
+          stateRef.current = 'off';
+          void startRef.current?.(camera, storeKey, options);
+        }
+      };
       try {
         // A shop's widget key bills its plan; a 402 (minutes used up) falls back to the free overlay
         const res = await fetch('/api/decart-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(storeKey ? { storeKey, source: 'widget' } : { source: 'web' }),
+          body: JSON.stringify(storeKey ? { storeKey, source } : { source }),
         });
         const data = (await res.json().catch(() => ({}))) as { apiKey?: unknown };
         if (!res.ok || typeof data.apiKey !== 'string') throw new Error('No live AI token');
@@ -104,9 +114,7 @@ export function useDecartLive() {
           else if (state === 'disconnected') stateRef.current = 'unavailable';
         });
         // The session cap or an error ends AI mode; the free tracked overlay takes over
-        client.on('sessionEnded', () => {
-          stateRef.current = 'unavailable';
-        });
+        client.on('sessionEnded', renew);
         client.on('error', () => {
           stateRef.current = 'unavailable';
         });
@@ -118,6 +126,11 @@ export function useDecartLive() {
     },
     [sendGarment]
   );
+  // start() renews itself; the ref avoids a self-referencing callback
+  const startRef = useRef<typeof start | null>(null);
+  useEffect(() => {
+    startRef.current = start;
+  }, [start]);
 
   const setGarment = useCallback(
     (img: HTMLImageElement, kind: LiveGarmentKind) => {
@@ -133,6 +146,8 @@ export function useDecartLive() {
     return stateRef.current === 'live' && output && output.readyState >= 2 ? output : null;
   }, []);
 
+  const getState = useCallback((): DecartLiveState => stateRef.current, []);
+
   // Stable identity: callers list this in effect deps, and re-running them would resend the garment
-  return useMemo(() => ({ start, stop, setGarment, liveVideo }), [start, stop, setGarment, liveVideo]);
+  return useMemo(() => ({ start, stop, setGarment, liveVideo, getState }), [start, stop, setGarment, liveVideo, getState]);
 }

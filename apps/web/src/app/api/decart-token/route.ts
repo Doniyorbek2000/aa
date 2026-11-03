@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as { storeKey?: unknown; source?: unknown };
   const storeKey = typeof body.storeKey === 'string' && STORE_KEY.test(body.storeKey) ? body.storeKey : null;
-  const source = body.source === 'widget' || body.source === 'app' ? body.source : 'web';
+  const source = body.source === 'widget' || body.source === 'app' || body.source === 'live-shop' ? body.source : 'web';
   const hasDb = !!process.env.DATABASE_URL;
 
   let seconds = maxSessionSeconds(process.env.DECART_MAX_SESSION_SECONDS);
