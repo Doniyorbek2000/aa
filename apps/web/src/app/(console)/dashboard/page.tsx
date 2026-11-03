@@ -65,6 +65,10 @@ export default async function DashboardPage() {
                 <h2>Saytga ulash</h2>
                 <p className="muted">Bu kodni saytingizning &lt;head&gt; qismiga qo‘ying: mahsulot rasmlarida “Try-On” tugmasi chiqadi.</p>
                 <code className="code">{snippet}</code>
+                <p className="muted">
+                  Mebel, chiroq yoki gilam sotsangiz — “Xonangizda ko‘ring” tugmasiga shu havolani qo‘ying (rasm manzilini o‘zingiznikiga almashtiring):
+                </p>
+                <code className="code">{`${SITE}/space?kind=furniture&store=${store.widgetKey}&product=https://saytingiz.uz/divan.jpg`}</code>
                 <form action={rotateWidgetKey}>
                   <input type="hidden" name="storeId" value={store.id} />
                   <button className="btn btn-ghost btn-small" type="submit">Kalitni yangilash</button>
