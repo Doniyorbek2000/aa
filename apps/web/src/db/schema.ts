@@ -85,6 +85,26 @@ export const garments = pgTable(
   (t) => [index('garments_store_idx').on(t.storeId)]
 );
 
+export const videoJobStatus = pgEnum('video_job_status', ['pending', 'completed', 'failed']);
+
+/** A shop's video ad variant rendered by Decart in the background; planSeconds were reserved for it. */
+export const videoJobs = pgTable(
+  'video_jobs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    storeId: uuid('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    decartJobId: text('decart_job_id').notNull(),
+    prompt: text('prompt').notNull(),
+    videoSeconds: integer('video_seconds').notNull(),
+    planSeconds: integer('plan_seconds').notNull(),
+    status: videoJobStatus('status').notNull().default('pending'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('video_jobs_store_idx').on(t.storeId, t.createdAt)]
+);
+
 /** One live AI session granted, with the seconds reserved for it (the session cap). */
 export const liveSessions = pgTable(
   'live_sessions',

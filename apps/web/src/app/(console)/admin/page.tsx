@@ -1,4 +1,4 @@
-import { count, desc, eq, gte, sum } from 'drizzle-orm';
+import { and, count, desc, eq, gte, ne, sum } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { getDb, schema } from '@/db';
 import { maskPhone } from '@/lib/auth/phone';
@@ -19,7 +19,7 @@ const minutes = (seconds: number) => `${Math.round(seconds / 60)} daq`;
 async function loadAdminData() {
   const db = getDb();
   const since = (ms: number) => new Date(Date.now() - ms);
-  const [[users], [stores], [today], [month], plans, storeRows] = await Promise.all([
+  const [[users], [stores], [today], [month], [videos], plans, storeRows] = await Promise.all([
     db.select({ n: count() }).from(schema.users),
     db.select({ n: count() }).from(schema.stores),
     db.select({ n: count() }).from(schema.liveSessions).where(gte(schema.liveSessions.createdAt, since(DAY_MS))),
@@ -27,6 +27,11 @@ async function loadAdminData() {
       .select({ n: count(), seconds: sum(schema.liveSessions.seconds) })
       .from(schema.liveSessions)
       .where(gte(schema.liveSessions.createdAt, since(MONTH_MS))),
+    // Video ads are billed apart from live sessions; failed ones were refunded
+    db
+      .select({ seconds: sum(schema.videoJobs.planSeconds) })
+      .from(schema.videoJobs)
+      .where(and(gte(schema.videoJobs.createdAt, since(MONTH_MS)), ne(schema.videoJobs.status, 'failed'))),
     db.select().from(schema.plans).orderBy(schema.plans.monthlyMinutes),
     db
       .select({ store: schema.stores, plan: schema.plans, owner: schema.users })
@@ -35,7 +40,7 @@ async function loadAdminData() {
       .leftJoin(schema.plans, eq(schema.plans.id, schema.stores.planId))
       .orderBy(desc(schema.stores.createdAt)),
   ]);
-  const monthSeconds = Number(month?.seconds ?? 0);
+  const monthSeconds = Number(month?.seconds ?? 0) + Number(videos?.seconds ?? 0);
   return {
     stats: { users: users?.n ?? 0, stores: stores?.n ?? 0, today: today?.n ?? 0, month: month?.n ?? 0, monthSeconds },
     plans,
