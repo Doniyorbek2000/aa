@@ -445,7 +445,10 @@ export function LiveTryOnModal({
         setStatusText('');
         setGarmentsApplied((c) => c + 1);
       };
-      img.src = url;
+      // Store CDNs often send no CORS headers, which would leave the canvas unable to draw them
+      img.src = /^https?:\/\//i.test(url) && !url.startsWith(window.location.origin)
+        ? `/api/garment?url=${encodeURIComponent(url)}`
+        : url;
 
       if (activeModel !== 'a12-pose-mesh') {
         void runOpenSourceNeuralTryOn(activeModel, url);
@@ -641,6 +644,23 @@ export function LiveTryOnModal({
     cleanGarmentRef.current = null;
     setStep(2);
     startExperience();
+  };
+
+  const handleShareLook = async () => {
+    const blob = neuralResultUrl
+      ? await fetch(neuralResultUrl).then((r) => r.blob())
+      : await new Promise<Blob | null>((resolve) => canvasRef.current?.toBlob(resolve, 'image/jpeg', 0.9) ?? resolve(null));
+    if (!blob) return;
+    const file = new File([blob], 'a12-try-on.jpg', { type: blob.type || 'image/jpeg' });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'A12 Try-On' }).catch(() => {});
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(file);
+    link.download = file.name;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   };
 
   const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -899,6 +919,27 @@ export function LiveTryOnModal({
               </div>
             </div>
           </div>
+          {garmentsApplied > 0 && (
+            <button
+              type="button"
+              onClick={() => void handleShareLook()}
+              style={{
+                display: 'block',
+                margin: '10px auto 0',
+                padding: '7px 14px',
+                borderRadius: '999px',
+                border: '1px solid rgba(23,4,4,0.2)',
+                background: '#fffffc',
+                color: '#170404',
+                fontSize: '12.5px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {t.shareLook}
+            </button>
+          )}
           <button
             className={`t-continue ${garmentsApplied > 0 ? 'show' : ''}`}
             type="button"

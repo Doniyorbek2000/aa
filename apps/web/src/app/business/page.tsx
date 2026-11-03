@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LanguageSwitcher, useI18n } from '@/lib/i18n';
+import { BUSINESS_COPY } from '@/lib/business-copy';
 import {
   BrandWordmark,
-  CWS_URL,
   LiveTryOnModal,
   PoweredByA12,
 } from '@/components/live-tryon-modal';
@@ -28,7 +28,8 @@ function normaliseStore(v: string): string {
 }
 
 export default function BusinessOnePagerPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const b = BUSINESS_COPY[locale] ?? BUSINESS_COPY.en;
   const router = useRouter();
   const [copiedSnip, setCopiedSnip] = useState(false);
   const [tryModalOpen, setTryModalOpen] = useState(false);
@@ -42,6 +43,65 @@ export default function BusinessOnePagerPage() {
   // Install hand-off sheet state
   const [installSheetOpen, setInstallSheetOpen] = useState(false);
   const [installStoreUrl, setInstallStoreUrl] = useState('');
+
+  // The preview needs a desktop browser, so phones get a "send to laptop" sheet instead
+  const [laptopSheetOpen, setLaptopSheetOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setPreviewSheetOpen(false);
+      setInstallSheetOpen(false);
+      setLaptopSheetOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const openPreview = () => {
+    if (/iPad|iPhone|iPod|Android|Mobile/i.test(navigator.userAgent)) {
+      setLaptopSheetOpen(true);
+      return;
+    }
+    setPreviewStep(1);
+    setPreviewSheetOpen(true);
+  };
+
+  // Private preview = a bookmarklet that runs the storefront widget on the owner's own tab only
+  const bookmarkletRef = useRef<HTMLAnchorElement | null>(null);
+  useEffect(() => {
+    if (!previewSheetOpen || previewStep !== 2) return;
+    let cancelled = false;
+    fetch('/widget/latest/a12.js')
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+      .then((code) => {
+        if (cancelled || !bookmarkletRef.current) return;
+        const src = `window.__A12_ORIGIN__=${JSON.stringify(window.location.origin)};${code}`;
+        // React blocks javascript: hrefs in JSX, so the attribute is set directly
+        bookmarkletRef.current.setAttribute('href', `javascript:${encodeURIComponent(src)}`);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [previewSheetOpen, previewStep]);
+
+  const pageUrl = () => window.location.origin + '/business';
+
+  const handleCopyLink = () => {
+    navigator.clipboard?.writeText(pageUrl()).catch(() => {});
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 1800);
+  };
+
+  const handleShareLink = () => {
+    if (navigator.share) {
+      navigator.share({ title: 'A12 Try-On', url: pageUrl() }).catch(() => {});
+    } else {
+      handleCopyLink();
+    }
+  };
 
   const snippetText = `<script src="https://a12.uz/widget/latest/a12.js?domain=yourstore.com" async></script>`;
 
@@ -309,23 +369,11 @@ export default function BusinessOnePagerPage() {
           line-height: 1.2; max-width: 34ch; color: var(--ink);
         }
         .one-pager-root .voices-sub { font-size: 13.5px; color: var(--muted); line-height: 1.55; margin-top: 10px; max-width: 58ch; }
-        .one-pager-root .vq-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 26px; }
-        @media (max-width: 900px) { .one-pager-root .vq-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 520px) { .one-pager-root .vq-grid { grid-template-columns: 1fr; } }
-        .one-pager-root .vq {
           display: flex; flex-direction: column; overflow: hidden;
           border: 0.5px solid var(--line); border-radius: 12px;
           background: var(--paper); color: var(--ink); text-decoration: none;
           transition: border-color 0.18s ease, transform 0.18s ease;
         }
-        .one-pager-root .vq:hover { border-color: rgba(23,4,4,0.32); transform: translateY(-2px); }
-        .one-pager-root .vq-shot { position: relative; display: block; height: 168px; overflow: hidden; background: #efe9f2; }
-        .one-pager-root .vq-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-        .one-pager-root .vq-body { padding: 13px 14px 12px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
-        .one-pager-root .vq-body q { font-size: 14px; line-height: 1.38; letter-spacing: -0.02em; quotes: '\\201C' '\\201D'; }
-        .one-pager-root .vq-meta { margin-top: auto; display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
-        .one-pager-root .vq-meta strong { color: var(--ink); font-weight: 500; }
-        .one-pager-root .vq-meta svg { width: 11px; height: 11px; flex-shrink: 0; margin-left: auto; }
 
         .one-pager-root footer { padding: 32px 0 40px; border-top: 0.5px solid var(--line); }
         .one-pager-root .foot-in { display: flex; align-items: center; justify-content: space-between; gap: 16px 30px; flex-wrap: wrap; }
@@ -376,6 +424,8 @@ export default function BusinessOnePagerPage() {
         }
         .one-pager-root .sheet-cta { margin-top: 22px; }
         .one-pager-root .sheet-cta .btn { width: 100%; }
+        .one-pager-root .bookmarklet { cursor: grab; border-style: dashed; }
+        .one-pager-root .bookmarklet:active { cursor: grabbing; }
         .one-pager-root .wiz-next {
           margin-top: 14px; background: none; border: none; padding: 0; cursor: pointer;
           font-family: inherit; font-size: 14px; color: var(--muted);
@@ -402,10 +452,7 @@ export default function BusinessOnePagerPage() {
             <button
               type="button"
               className="btn btn-secondary btn-sm btn-talk"
-              onClick={() => {
-                setPreviewStep(1);
-                setPreviewSheetOpen(true);
-              }}
+              onClick={openPreview}
             >
               {t.seeItOnMyStore}
             </button>
@@ -442,20 +489,9 @@ export default function BusinessOnePagerPage() {
               <button
                 type="button"
                 className="btn btn-secondary btn-stack"
-                onClick={() => {
-                  setPreviewStep(1);
-                  setPreviewSheetOpen(true);
-                }}
+                onClick={openPreview}
               >
                 <span className="b-main">
-                  <img
-                    className="chrome-ico"
-                    src="/assets/chrome.svg"
-                    alt=""
-                    aria-hidden="true"
-                    width={16}
-                    height={16}
-                  />
                   {t.seeItOnMyStore}
                 </span>
                 <span className="b-sub">{t.ownProductPagesSub}</span>
@@ -512,7 +548,7 @@ export default function BusinessOnePagerPage() {
                 </button>
                 <img
                   src={src}
-                  alt={`Garment ${i + 2} to try on`}
+                  alt={`Garment ${i + 1} to try on`}
                   width={522}
                   height={700}
                   loading="lazy"
@@ -532,7 +568,7 @@ export default function BusinessOnePagerPage() {
             <div>
               <span className="eyebrow">{t.engagementEyebrow}</span>
               <h2>{t.engagementTitle}</h2>
-              <p className="lede">{t.engagementLede}</p>
+              <p className="lede">{b.engagementLede}</p>
             </div>
             <div className="shot">
               <div className="frame frame-shot">
@@ -549,34 +585,28 @@ export default function BusinessOnePagerPage() {
         </div>
       </section>
 
-      {/* ═══ The three numbers ═══ */}
+      {/* ═══ The three facts ═══ */}
       <section className="numbers">
         <div className="wrap">
-          <span className="eyebrow">{t.whatChangesEyebrow}</span>
+          <span className="eyebrow">{b.factsEyebrow}</span>
 
           <div className="rows">
-            <div className="row">
-              <div className="row-claim">{t.stat1Claim}</div>
-              <div className="row-fig">{t.stat1Fig}</div>
-              <p className="row-detail">{t.stat1Detail}</p>
-            </div>
-            <div className="row">
-              <div className="row-claim">{t.stat2Claim}</div>
-              <div className="row-fig">
-                8.7 <span>{t.stat2FigSub}</span>
+            {(
+              [
+                [b.fact1Claim, b.fact1Fig, b.fact1Detail],
+                [b.fact2Claim, b.fact2Fig, b.fact2Detail],
+                [b.fact3Claim, b.fact3Fig, b.fact3Detail],
+              ] as const
+            ).map(([claim, fig, detail]) => (
+              <div className="row" key={fig}>
+                <div className="row-claim">{claim}</div>
+                <div className="row-fig">{fig}</div>
+                <p className="row-detail">{detail}</p>
               </div>
-              <p className="row-detail">{t.stat2Detail}</p>
-            </div>
-            <div className="row">
-              <div className="row-claim">{t.stat3Claim}</div>
-              <div className="row-fig">
-                7.8 <span>{t.stat3FigSub}</span>
-              </div>
-              <p className="row-detail">{t.stat3Detail}</p>
-            </div>
+            ))}
           </div>
 
-          <p className="numbers-sub">{t.measuredSub}</p>
+          <p className="numbers-sub">{b.factsSub}</p>
         </div>
       </section>
 
@@ -602,20 +632,9 @@ export default function BusinessOnePagerPage() {
                 <button
                   type="button"
                   className="btn btn-secondary btn-stack"
-                  onClick={() => {
-                    setPreviewStep(1);
-                    setPreviewSheetOpen(true);
-                  }}
+                  onClick={openPreview}
                 >
                   <span className="b-main">
-                    <img
-                      className="chrome-ico"
-                      src="/assets/chrome.svg"
-                      alt=""
-                      aria-hidden="true"
-                      width={20}
-                      height={20}
-                    />
                     {t.opt1Btn}
                   </span>
                   <span className="b-sub">{t.opt1Sub}</span>
@@ -667,155 +686,29 @@ export default function BusinessOnePagerPage() {
       {/* ═══ Q&A ═══ */}
       <section className="qa" id="qa">
         <div className="wrap">
-          <span className="eyebrow">For your engineers</span>
-          <h2>What the one line of code gives you.</h2>
+          <span className="eyebrow">{b.qaEyebrow}</span>
+          <h2>{b.qaTitle}</h2>
 
           <div className="qa-list">
-            <details>
-              <summary>One line of code, live in under an hour</summary>
-              <div className="qa-a">
-                One line before <code>&lt;/body&gt;</code>, or one click if you are on Shopify. No
-                complex APIs, no build step, no theme files edited. Live in under an hour with
-                near-zero engineering cost. Deleting the line removes it completely.
-              </div>
-            </details>
-            <details>
-              <summary>Fast performance, live video in real time</summary>
-              <div className="qa-a">
-                The try-on is live video, rendered in real time as your shopper moves. What sits on
-                your storefront is a single <code>async</code> script of about{' '}
-                <strong>17&nbsp;KB</strong>, so your pages keep loading exactly as fast as they do
-                today.
-              </div>
-            </details>
-            <details>
-              <summary>Native by design</summary>
-              <div className="qa-a">
-                It&rsquo;s designed to disappear into your storefront rather than compete with it:
-                neutral white surfaces, 4px radius, no brand colour of its own, and it inherits your
-                typeface. It runs in an isolated frame on our origin, so your CSS can&rsquo;t touch
-                it and none of its styles leak into your site.
-              </div>
-            </details>
-            <details>
-              <summary>Out of the box and yours to control</summary>
-              <div className="qa-a">
-                It detects product images across your pages automatically: nothing to tag or
-                annotate. If you&rsquo;d rather set the rules yourself, you can restrict it to
-                specific pages, swap in your own Try-On button, or hand-pick which products get it.
-              </div>
-            </details>
-            <details>
-              <summary>Broad coverage, curated live</summary>
-              <div className="qa-a">
-                <p>
-                  Our model covers the <strong>majority of fashion catalogues</strong>. On your live
-                  storefront, the Try-On button only appears on garments that render well.
-                </p>
-                <p>
-                  Want proof? The Chrome extension preview skips the filter entirely: try any
-                  garment, on any site, and judge the model&rsquo;s range yourself.
-                </p>
-              </div>
-            </details>
-            <details>
-              <summary>Fabric that behaves like fabric</summary>
-              <div className="qa-a">
-                It&rsquo;s powered by Lucy, our real-time try-on model. Quality isn&rsquo;t
-                something you take on faith: try it on the garments above, or load your own products
-                with the Chrome extension and judge for yourself.
-              </div>
-            </details>
-            <details>
-              <summary>One line, every device</summary>
-              <div className="qa-a">
-                Yes, mobile and desktop both, once it&rsquo;s live on your store. The Chrome
-                extension is the one desktop-only piece, since browser extensions simply don&rsquo;t
-                install on phones. That&rsquo;s for previewing only; live, it runs everywhere.
-              </div>
-            </details>
+            {b.qa.map(([question, answer]) => (
+              <details key={question}>
+                <summary>{question}</summary>
+                <div className="qa-a">{answer}</div>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ Social posts ═══ */}
+      {/* ═══ Social share ═══ */}
       <section className="voices" id="voices">
         <div className="wrap">
-          <span className="eyebrow">Social share opportunity</span>
-          <p className="voices-line">Free distribution, built in.</p>
-          <p className="voices-sub">
-            Shoppers post their try-on videos to social media, and your storefront rides along.
-            Distribution you didn&rsquo;t pay for, in front of people who weren&rsquo;t shopping
-            yet.
-          </p>
-          <div className="vq-grid">
-            <a className="vq" href="#demo">
-              <span className="vq-shot">
-                <img
-                  src="/assets/reactions/crislenta.jpg"
-                  alt="Screen recording of the A12 try-on running on a Loro Piana product page"
-                  loading="lazy"
-                  width={560}
-                  height={350}
-                />
-              </span>
-              <span className="vq-body">
-                <q>holy shit this is good</q>
-                <span className="vq-meta">
-                  <strong>Cris Lenta</strong> @crislenta
-                </span>
-              </span>
-            </a>
-            <a className="vq" href="#demo">
-              <span className="vq-shot">
-                <img
-                  src="/assets/reactions/evisdrenova.jpg"
-                  alt="evis talking to camera about A12"
-                  loading="lazy"
-                  width={560}
-                  height={350}
-                />
-              </span>
-              <span className="vq-body">
-                <q>Finally good e-commerce uses of AI!</q>
-                <span className="vq-meta">
-                  <strong>evis</strong> @evisdrenova
-                </span>
-              </span>
-            </a>
-            <a className="vq" href="#demo">
-              <span className="vq-shot">
-                <img
-                  src="/assets/reactions/sofiasofian.jpg"
-                  alt="The A12 try-on panel open on a fashion storefront"
-                  loading="lazy"
-                  width={560}
-                  height={350}
-                />
-              </span>
-              <span className="vq-body">
-                <q>This is truly what the future of shopping looks like</q>
-                <span className="vq-meta">
-                  <strong>sofía</strong> @sofiasofian
-                </span>
-              </span>
-            </a>
-            <a className="vq" href="#demo">
-              <span className="vq-shot">
-                <img
-                  src="/assets/reactions/devonfrohne.jpg"
-                  alt="The A12 widget rendering a jacket onto the poster live"
-                  loading="lazy"
-                  width={560}
-                  height={350}
-                />
-              </span>
-              <span className="vq-body">
-                <q>Ok trying on different outfits is cooler than I anticipated.</q>
-                <span className="vq-meta">
-                  <strong>▷Ξ▽O</strong> @DevonFrohne
-                </span>
-              </span>
+          <span className="eyebrow">{b.shareEyebrow}</span>
+          <p className="voices-line">{b.shareTitle}</p>
+          <p className="voices-sub">{b.shareLede}</p>
+          <div className="cta-row">
+            <a className="btn btn-secondary btn-sm" href="#demo">
+              {t.orTryItRightHere}
             </a>
           </div>
         </div>
@@ -825,16 +718,17 @@ export default function BusinessOnePagerPage() {
         <div className="wrap foot-in">
           <PoweredByA12 />
           <nav className="legal" aria-label="Legal">
-            <Link href="/virtual-try-on">Virtual Try-On</Link>
-            <Link href="/mobile">Mobile App</Link>
-            <Link href="/legal#privacy">Privacy Policy</Link>
-            <Link href="/legal#terms">Terms of Service</Link>
+            <Link href="/virtual-try-on">{t.navVirtualTryOn}</Link>
+            <Link href="/mobile">{t.navMobileApp}</Link>
+            <Link href="/legal#privacy">{t.navPrivacy}</Link>
+            <Link href="/legal#terms">{t.navTerms}</Link>
+            <Link href="/legal#aup">{t.navAup}</Link>
             <Link href="/">a12.uz</Link>
           </nav>
         </div>
       </footer>
 
-      {/* ═══ Option 1 Explainer Sheet ═══ */}
+      {/* ═══ Option 1: private preview via bookmark ═══ */}
       {previewSheetOpen && (
         <div
           className="sheet-overlay"
@@ -842,12 +736,12 @@ export default function BusinessOnePagerPage() {
             if (e.target === e.currentTarget) setPreviewSheetOpen(false);
           }}
         >
-          <div className="sheet-in" role="dialog" aria-modal="true">
+          <div className="sheet-in" role="dialog" aria-modal="true" aria-labelledby="preview-title">
             <button
               className="sheet-close"
               type="button"
               onClick={() => setPreviewSheetOpen(false)}
-              aria-label="Close"
+              aria-label={b.close}
             >
               &times;
             </button>
@@ -858,73 +752,62 @@ export default function BusinessOnePagerPage() {
             </div>
 
             {previewStep === 1 && (
-              <div>
-                <h4>Create a live demo on your store</h4>
-                <p className="sheet-lede">
-                  It runs on your own product pages, right now. Nothing changes on your site.
-                </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setPreviewStep(2);
+                }}
+              >
+                <h4 id="preview-title">{b.pv1Title}</h4>
+                <p className="sheet-lede">{b.pv1Lede}</p>
                 <div className="url-row">
-                  <label htmlFor="store-url">Your store</label>
+                  <label htmlFor="store-url">{b.storeLabel}</label>
                   <input
                     id="store-url"
                     type="text"
+                    inputMode="url"
+                    autoComplete="url"
                     placeholder="yourstore.com"
                     value={previewStoreUrl}
                     onChange={(e) => setPreviewStoreUrl(e.target.value)}
+                    autoFocus
                   />
                 </div>
                 <div className="sheet-cta">
-                  <button
-                    className="btn btn-primary"
-                    type="button"
-                    onClick={() => setPreviewStep(2)}
-                  >
-                    Create my demo
+                  <button className="btn btn-primary" type="submit">
+                    {b.pv1Btn}
                   </button>
                 </div>
-              </div>
+              </form>
             )}
 
             {previewStep === 2 && (
               <div>
-                <h4>Add the extension</h4>
-                <p className="sheet-lede">
-                  One click, free, no account. This is what puts the try-on on your pages, for your
-                  eyes only.
-                </p>
+                <h4 id="preview-title">{b.pv2Title}</h4>
+                <p className="sheet-lede">{b.pv2Lede}</p>
                 <div className="sheet-cta">
-                  <a className="btn btn-primary" href={CWS_URL}>
-                    <img
-                      className="chrome-ico"
-                      src="/assets/chrome.svg"
-                      alt=""
-                      aria-hidden="true"
-                      width={20}
-                      height={20}
-                    />
-                    Add to Chrome, free
+                  <a
+                    ref={bookmarkletRef}
+                    className="btn btn-primary bookmarklet"
+                    draggable
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    ✨ A12 Try-On
                   </a>
                 </div>
-                <button
-                  className="wiz-next"
-                  type="button"
-                  onClick={() => setPreviewStep(3)}
-                >
-                  Added it, what is next
+                <button className="wiz-next" type="button" onClick={() => setPreviewStep(3)}>
+                  {b.pv2Next}
                 </button>
               </div>
             )}
 
             {previewStep === 3 && (
               <div>
-                <h4>Open your store</h4>
+                <h4 id="preview-title">{b.pv3Title}</h4>
                 <p className="sheet-lede">
-                  Go to any product page on{' '}
-                  <strong>{cleanPreviewDomain || 'your own store'}</strong>. The Try-On button is
-                  waiting on your products, exactly what your shoppers would get once the line of
-                  code is in.
+                  {b.pv3Lede.replace('{store}', cleanPreviewDomain || b.pv3Fallback)}
                 </p>
-                {cleanPreviewDomain && cleanPreviewDomain.includes('.') && (
+                {cleanPreviewDomain.includes('.') && (
                   <div className="sheet-cta">
                     <a
                       className="btn btn-primary"
@@ -932,12 +815,44 @@ export default function BusinessOnePagerPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Open {cleanPreviewDomain}
+                      {b.pv3Open.replace('{store}', cleanPreviewDomain)}
                     </a>
                   </div>
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Mobile notice: the preview needs a laptop ═══ */}
+      {laptopSheetOpen && (
+        <div
+          className="sheet-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setLaptopSheetOpen(false);
+          }}
+        >
+          <div className="sheet-in" role="dialog" aria-modal="true" aria-labelledby="laptop-title">
+            <button
+              className="sheet-close"
+              type="button"
+              onClick={() => setLaptopSheetOpen(false)}
+              aria-label={b.close}
+            >
+              &times;
+            </button>
+            <h4 id="laptop-title">{b.lpTitle}</h4>
+            <p className="sheet-lede">{b.lpLede}</p>
+            <div className="sheet-cta">
+              <button className="btn btn-primary" type="button" onClick={handleShareLink}>
+                {t.handoffShareBtn}
+              </button>
+            </div>
+            <p className="fine">{t.handoffSubNote}</p>
+            <button className="wiz-next" type="button" onClick={handleCopyLink}>
+              {copiedLink ? t.copied : t.copyLink}
+            </button>
           </div>
         </div>
       )}
@@ -950,43 +865,42 @@ export default function BusinessOnePagerPage() {
             if (e.target === e.currentTarget) setInstallSheetOpen(false);
           }}
         >
-          <div className="sheet-in" role="dialog" aria-modal="true">
+          <form
+            className="sheet-in"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="install-title"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleInstallContinue();
+            }}
+          >
             <button
               className="sheet-close"
               type="button"
               onClick={() => setInstallSheetOpen(false)}
-              aria-label="Close"
+              aria-label={b.close}
             >
               &times;
             </button>
-            <h4>Which store are we installing on?</h4>
-            <p className="sheet-lede">
-              One field, then straight to the install. Nothing changes on your store until you paste
-              the line of code in.
-            </p>
+            <h4 id="install-title">{b.inTitle}</h4>
+            <p className="sheet-lede">{b.inLede}</p>
             <div className="url-row">
-              <label htmlFor="install-url">Your store</label>
+              <label htmlFor="install-url">{b.storeLabel}</label>
               <input
                 id="install-url"
                 type="text"
+                inputMode="url"
+                autoComplete="url"
                 placeholder="yourstore.com"
                 value={installStoreUrl}
                 onChange={(e) => setInstallStoreUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleInstallContinue();
-                  }
-                }}
+                autoFocus
               />
             </div>
             <div className="sheet-cta">
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={handleInstallContinue}
-              >
-                Continue to install
+              <button className="btn btn-primary" type="submit">
+                {b.inBtn}
               </button>
             </div>
             <button
@@ -997,9 +911,9 @@ export default function BusinessOnePagerPage() {
                 router.push('/install');
               }}
             >
-              Skip, I&rsquo;ll type it there
+              {b.inSkip}
             </button>
-          </div>
+          </form>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { isIP } from 'node:net';
 import { INITIAL_GARMENT_CATALOG, parseProductUrlToGarment } from '@webpul/shared-core';
+import { fetchPublicImage } from '@/lib/public-image';
 
 export const maxDuration = 150;
 
@@ -54,36 +54,10 @@ async function getImageBytesAndMime(imageInput: string): Promise<{ bytes: Uint8A
   const normalized = normalizePublicImageUrl(imageInput);
   const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
   if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
-    const url = new URL(normalized);
-    const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-    if (
-      url.protocol !== 'https:' ||
-      url.username ||
-      url.password ||
-      isIP(host) ||
-      host === 'localhost' ||
-      host.endsWith('.localhost') ||
-      host.endsWith('.local') ||
-      host.endsWith('.internal')
-    ) {
-      throw new Error('Only public HTTPS image URLs are supported.');
-    }
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'A12-VTON-Engine/3.3' },
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch source image: ${res.status}`);
-    }
-    const contentType = (res.headers.get('content-type') ?? '').split(';', 1)[0]?.trim().toLowerCase();
-    const contentLength = Number(res.headers.get('content-length') ?? 0);
-    if (!contentType || !allowedMimeTypes.has(contentType) || contentLength > 8_000_000) {
-      throw new Error('Source image type or size is not supported.');
-    }
-    const ab = await res.arrayBuffer();
-    if (ab.byteLength > 8_000_000) throw new Error('Source image is too large.');
-    return { bytes: new Uint8Array(ab), mimeType: contentType };
+    // Garments arriving via the proxy are unwrapped so the store's original image is fetched once
+    const parsed = new URL(normalized);
+    const proxied = parsed.pathname === '/api/garment' ? parsed.searchParams.get('url') : null;
+    return fetchPublicImage(proxied ?? normalized);
   }
 
   const commaIdx = normalized.indexOf(',');

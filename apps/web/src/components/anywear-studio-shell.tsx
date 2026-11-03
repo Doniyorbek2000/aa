@@ -19,6 +19,7 @@ export function AnywearStudioShell() {
   const [copiedHandoff, setCopiedHandoff] = useState(false);
   const [siteIndex, setSiteIndex] = useState(0);
   const [hostVisible, setHostVisible] = useState(true);
+  const [initialGarment, setInitialGarment] = useState<string | null>(null);
 
   // Fake-browser URL bar: cycle between shopping sites every 2.6s
   useEffect(() => {
@@ -37,7 +38,13 @@ export function AnywearStudioShell() {
     try {
       const u = new URL(window.location.href);
       if (u.searchParams.has('try')) {
+        // The storefront widget sends the product image it was pinned to
+        const garment = u.searchParams.get('garment');
+        if (garment && /^https:\/\//i.test(garment) && garment.length <= 2048) {
+          setInitialGarment(garment);
+        }
         u.searchParams.delete('try');
+        u.searchParams.delete('garment');
         window.history.replaceState(
           null,
           '',
@@ -189,7 +196,11 @@ export function AnywearStudioShell() {
       </main>
 
       {/* ═══ Live try-on demo modal ═══ */}
-      <LiveTryOnModal open={tryModalOpen} onClose={() => setTryModalOpen(false)} />
+      <LiveTryOnModal
+        open={tryModalOpen}
+        onClose={() => setTryModalOpen(false)}
+        initialGarmentUrl={initialGarment}
+      />
 
       {/* ═══ Mobile handoff modal ═══ */}
       <div
