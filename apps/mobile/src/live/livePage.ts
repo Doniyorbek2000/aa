@@ -76,6 +76,31 @@ function garmentJpeg(img) {
   return c.toDataURL('image/jpeg', 0.9);
 }
 
+// The front camera goes to Decart already mirrored, so its output is a selfie view as-is and the
+// "AI Generated" watermark it burns in stays readable
+const mirror = document.createElement('canvas');
+const mirrorCtx = mirror.getContext('2d');
+let mirrorStream = null;
+
+function drawMirror() {
+  if (!video.videoWidth) return;
+  if (mirror.width !== video.videoWidth || mirror.height !== video.videoHeight) {
+    mirror.width = video.videoWidth;
+    mirror.height = video.videoHeight;
+  }
+  mirrorCtx.setTransform(-1, 0, 0, 1, mirror.width, 0);
+  mirrorCtx.drawImage(video, 0, 0);
+}
+
+function aiInputTrack() {
+  if (facing !== 'front') return stream.getVideoTracks()[0];
+  if (!mirrorStream) {
+    drawMirror();
+    mirrorStream = mirror.captureStream(30);
+  }
+  return mirrorStream.getVideoTracks()[0];
+}
+
 async function sendGarmentToAi() {
   if (!decart || !garmentImg) return;
   const client = decart;
@@ -89,7 +114,7 @@ async function startAi() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || typeof data.apiKey !== 'string') return;
     const { createDecartClient, models } = await import('${DECART_SDK}');
-    const client = await createDecartClient({ apiKey: data.apiKey }).realtime.connect(stream, {
+    const client = await createDecartClient({ apiKey: data.apiKey }).realtime.connect(new MediaStream([aiInputTrack()]), {
       model: models.realtime('${DECART_MODEL}'),
       onRemoteStream: (remote) => {
         aiVideo.srcObject = remote;
@@ -256,14 +281,13 @@ function frame(now) {
   const cw = Math.round(innerWidth * dpr), ch = Math.round(innerHeight * dpr);
   if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
 
+  if (mirrorStream && facing === 'front') drawMirror();
+
   if (isAiLive && aiVideo.readyState >= 2 && aiVideo.videoWidth) {
-    // Decart already dressed the person in this frame; just show it the way the preview is mirrored
+    // Decart already dressed the person in this frame, and it was sent mirrored, so draw it as-is
     const s = Math.max(cw / aiVideo.videoWidth, ch / aiVideo.videoHeight);
     const dw = aiVideo.videoWidth * s, dh = aiVideo.videoHeight * s;
-    ctx.save();
-    if (facing === 'front') { ctx.translate(cw, 0); ctx.scale(-1, 1); }
     ctx.drawImage(aiVideo, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-    ctx.restore();
     setStatus('ai');
     return;
   }
@@ -331,7 +355,7 @@ window.__a12 = async (msg) => {
       facing = msg.value;
       smooth = null;
       await startCamera();
-      if (decart) await decart.replaceVideoTrack(stream.getVideoTracks()[0]);
+      if (decart) await decart.replaceVideoTrack(aiInputTrack());
     }
   } catch (error) {
     post({ type: 'status', value: 'failed', detail: String(error) });

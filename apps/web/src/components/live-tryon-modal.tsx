@@ -387,11 +387,13 @@ export function LiveTryOnModal({
       const aiVideo = isCameraLive ? decart.liveVideo() : null;
 
       if (camVid && isCameraLive) {
-        // Draw the mirrored feed covering the stage
+        // Draw the feed covering the stage as a selfie view; Decart's video arrives already mirrored
         const source = aiVideo ?? camVid;
         ctx.save();
-        ctx.translate(cw, 0);
-        ctx.scale(-1, 1);
+        if (!aiVideo) {
+          ctx.translate(cw, 0);
+          ctx.scale(-1, 1);
+        }
         const vw = source.videoWidth || 1280;
         const vh = source.videoHeight || 720;
         const scale = Math.max(cw / vw, ch / vh);
