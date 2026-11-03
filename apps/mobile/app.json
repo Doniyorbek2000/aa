@@ -1,38 +1,50 @@
 {
   "expo": {
-    "name": "A12 Anywear AI",
+    "name": "A12 Try-On",
     "slug": "a12-anywear-ai",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "../../logo.png",
-    "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "../../logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#050811"
-    },
+    "userInterfaceStyle": "light",
+    "scheme": "a12anywear",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ai.a12.anywear",
-      "infoPlist": {
-        "NSCameraUsageDescription": "A12 Anywear requires real-time camera access for 30 FPS AI Virtual Try-On.",
-        "NSMicrophoneUsageDescription": "Optional audio capture when recording lookbook video clips.",
-        "NSPhotoLibraryAddUsageDescription": "Save your virtual try-on outfits and videos to your gallery."
-      }
+      "bundleIdentifier": "ai.a12.anywear"
     },
     "android": {
       "package": "ai.a12.anywear",
       "adaptiveIcon": {
         "foregroundImage": "../../logo.png",
-        "backgroundColor": "#050811"
+        "backgroundColor": "#fffffc"
       },
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.INTERNET"
-      ]
+      "permissions": ["android.permission.CAMERA", "android.permission.INTERNET"],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
     },
-    "scheme": "a12anywear"
+    "plugins": [
+      [
+        "expo-splash-screen",
+        { "image": "../../logo.png", "imageWidth": 180, "resizeMode": "contain", "backgroundColor": "#fffffc" }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "A12 shows garments on you live through the camera. A photo is only sent when you tap AI try-on.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pick a garment photo from your gallery to try it on.",
+          "cameraPermission": "A12 shows garments on you live through the camera."
+        }
+      ],
+      "expo-sharing",
+      "expo-localization",
+      "expo-status-bar"
+    ],
+    "extra": {
+      "apiUrl": "https://a12.uz"
+    }
   }
 }
-
