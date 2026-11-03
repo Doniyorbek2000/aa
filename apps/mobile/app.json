@@ -32,12 +32,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-logo.png",
-          "imageWidth": 220,
+          "image": "./assets/adaptive-icon.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#fffffc",
           "dark": {
-            "image": "./assets/splash-logo-dark.png",
+            "image": "./assets/adaptive-icon.png",
             "backgroundColor": "#121014"
           }
         }
@@ -69,7 +69,8 @@
           "savePhotosPermission": "Save your try-on looks to your photos.",
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "apiUrl": "https://a12.uz"
@@ -79,4 +80,3 @@
     }
   }
 }
-

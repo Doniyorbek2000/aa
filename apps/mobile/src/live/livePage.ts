@@ -15,8 +15,8 @@ const POSE_MODEL =
  * the shoulders or hips; those frames never leave the phone. `capture` hands one camera
  * still back to the app for the photo AI try-on.
  *
- * App -> page: window.__a12({type: 'garment', url, kind} | {type: 'facing', value} | {type: 'capture', id})
- * Page -> app: {type: 'ready'} | {type: 'status', value} | {type: 'frame', id, data}
+ * App -> page: window.__a12({type: 'garment', url, kind} | {type: 'facing', value} | {type: 'capture', id} | {type: 'auth', token})
+ * Page -> app: {type: 'ready'} | {type: 'status', value} | {type: 'ai', value} | {type: 'frame', id, data}
  */
 export const LIVE_PAGE_HTML = `<!doctype html>
 <html>
@@ -57,6 +57,8 @@ let lastStatus = '';
 let garmentImg = null;
 let decart = null;
 let isAiLive = false;
+let isAiStarting = false;
+let authToken = null;
 
 // Phrasing from Decart's VTON prompting guide: one action, the region to replace
 const PROMPTS = {
@@ -108,11 +110,24 @@ async function sendGarmentToAi() {
   await client.setImage(garmentJpeg(garmentImg), { prompt: PROMPTS[kind] || PROMPTS.upper_body, enhance: true }).catch(() => {});
 }
 
-// Photoreal live try-on when the A12 server has a Decart key; any failure leaves the overlay running
+// Photoreal live try-on for signed-in users within their daily allowance; any failure leaves the
+// free overlay running and tells the app why (ai: signin | limit)
 async function startAi() {
+  if (decart || isAiStarting || !stream) return;
+  if (!authToken) {
+    post({ type: 'ai', value: 'signin' });
+    return;
+  }
+  isAiStarting = true;
   try {
-    const res = await fetch('/api/decart-token', { method: 'POST' });
+    const res = await fetch('/api/decart-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+      body: JSON.stringify({ source: 'app' }),
+    });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) post({ type: 'ai', value: 'signin' });
+    if (res.status === 402) post({ type: 'ai', value: 'limit' });
     if (!res.ok || typeof data.apiKey !== 'string') return;
     const { createDecartClient, models } = await import('${DECART_SDK}');
     const client = await createDecartClient({ apiKey: data.apiKey }).realtime.connect(new MediaStream([aiInputTrack()]), {
@@ -122,7 +137,7 @@ async function startAi() {
         aiVideo.play().catch(() => {});
       },
     });
-    const endAi = () => { isAiLive = false; decart = null; smooth = null; };
+    const endAi = () => { isAiLive = false; decart = null; smooth = null; post({ type: 'ai', value: 'off' }); };
     client.on('connectionChange', (state) => {
       if (state === 'generating') isAiLive = true;
       else if (state === 'disconnected') endAi();
@@ -130,11 +145,14 @@ async function startAi() {
     client.on('sessionEnded', endAi);
     client.on('error', endAi);
     decart = client;
+    post({ type: 'ai', value: 'live' });
     await sendGarmentToAi();
   } catch (error) {
     console.warn('a12 live AI unavailable', String(error));
     decart = null;
     isAiLive = false;
+  } finally {
+    isAiStarting = false;
   }
 }
 
@@ -352,6 +370,10 @@ window.__a12 = async (msg) => {
   try {
     if (msg.type === 'garment') await setGarment(msg.url, msg.kind);
     else if (msg.type === 'capture') capture(msg.id);
+    else if (msg.type === 'auth') {
+      authToken = typeof msg.token === 'string' ? msg.token : null;
+      startAi();
+    }
     else if (msg.type === 'facing' && msg.value !== facing) {
       facing = msg.value;
       smooth = null;
@@ -372,7 +394,7 @@ window.__a12 = async (msg) => {
   }
   post({ type: 'ready' });
   requestAnimationFrame(frame);
-  startAi();
+  // Live AI starts when the app sends the sign-in state ({type: 'auth'}) right after 'ready'
   try {
     const files = await FilesetResolver.forVisionTasks('${MEDIAPIPE}/wasm');
     const options = (delegate) => ({

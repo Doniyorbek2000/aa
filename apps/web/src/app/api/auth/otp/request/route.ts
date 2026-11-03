@@ -13,18 +13,22 @@ export async function POST(request: Request) {
   const phone = typeof body.phone === 'string' ? normaliseUzPhone(body.phone) : null;
   if (!phone) return Response.json({ error: 'Enter an Uzbek mobile number, e.g. +998 90 123 45 67.' }, { status: 400 });
 
+  // App Store / Google Play reviewers sign in with this number and its fixed code, no SMS sent
+  const reviewCode = process.env.AUTH_REVIEW_CODE ?? '';
+  const isReviewPhone = !!process.env.AUTH_REVIEW_PHONE && phone === normaliseUzPhone(process.env.AUTH_REVIEW_PHONE) && /^\d{6}$/.test(reviewCode);
   const isDevFallback = !isSmsConfigured() && process.env.NODE_ENV !== 'production';
-  if (!isSmsConfigured() && !isDevFallback) {
+  if (!isSmsConfigured() && !isDevFallback && !isReviewPhone) {
     return Response.json({ error: 'SMS sign-in is not available yet.' }, { status: 503 });
   }
   if (!allowIp(clientIp(request), Date.now())) {
     return Response.json({ error: 'Too many codes requested, try again later.' }, { status: 429 });
   }
 
-  const issued = await issueOtp(getDb(), phone, new Date());
+  const issued = await issueOtp(getDb(), phone, new Date(), isReviewPhone ? reviewCode : undefined);
   if ('retryAfterMs' in issued) {
     return Response.json({ error: 'A code was just sent.', retryAfterMs: issued.retryAfterMs }, { status: 429 });
   }
+  if (isReviewPhone) return Response.json({ sent: true });
   if (isDevFallback) {
     // Local development without Eskiz: show the code instead of texting it
     return Response.json({ sent: true, devCode: issued.code });

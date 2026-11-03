@@ -13,18 +13,27 @@ export interface LiveStageHandle {
   capture: () => Promise<string>;
 }
 
+/** Why live AI is or is not running: signin (needs an account), limit (today's free time used up). */
+export type AiState = 'live' | 'off' | 'signin' | 'limit';
+
 interface LiveStageProps {
   garmentUri: string | null;
   garmentType: GarmentType;
   facing: 'front' | 'back';
+  /** Session token of the signed-in user; live AI only runs with one. */
+  authToken: string | null;
   onStatus: (status: LiveStatus) => void;
+  onAiState: (state: AiState) => void;
   ref?: Ref<LiveStageHandle>;
 }
 
 type PageMessage =
   | { type: 'ready' }
   | { type: 'status'; value: LiveStatus }
+  | { type: 'ai'; value: AiState }
   | { type: 'frame'; id: number; data: string | null };
+
+const AI_STATES: readonly AiState[] = ['live', 'off', 'signin', 'limit'];
 
 // The page needs the network once for MediaPipe; without it we fall back to the manual overlay
 const READY_TIMEOUT_MS = 15_000;
@@ -41,6 +50,9 @@ function parsePageMessage(raw: string): PageMessage | null {
     if (msg.type === 'status' && STATUSES.includes(msg.value as LiveStatus)) {
       return { type: 'status', value: msg.value as LiveStatus };
     }
+    if (msg.type === 'ai' && AI_STATES.includes(msg.value as AiState)) {
+      return { type: 'ai', value: msg.value as AiState };
+    }
     if (msg.type === 'frame' && typeof msg.id === 'number') {
       return { type: 'frame', id: msg.id, data: typeof msg.data === 'string' && msg.data.startsWith('data:image/') ? msg.data : null };
     }
@@ -51,7 +63,7 @@ function parsePageMessage(raw: string): PageMessage | null {
 }
 
 /** Live camera with the garment tracked onto the body in real time (see livePage.ts). */
-export function LiveStage({ garmentUri, garmentType, facing, onStatus, ref }: LiveStageProps) {
+export function LiveStage({ garmentUri, garmentType, facing, authToken, onStatus, onAiState, ref }: LiveStageProps) {
   // The package defaults its extra-props generic to `undefined`, and `Props & undefined` is `never` on TS 6
   const webRef = useRef<WebView<object>>(null);
   const captures = useRef(new Map<number, (data: string | null) => void>());
@@ -69,10 +81,15 @@ export function LiveStage({ garmentUri, garmentType, facing, onStatus, ref }: Li
   );
 
   // Latest props for re-syncing a page that (re)loaded after they were sent
-  const latest = useRef({ garmentUri, garmentType, facing });
+  const latest = useRef({ garmentUri, garmentType, facing, authToken });
   useEffect(() => {
-    latest.current = { garmentUri, garmentType, facing };
-  }, [garmentUri, garmentType, facing]);
+    latest.current = { garmentUri, garmentType, facing, authToken };
+  }, [garmentUri, garmentType, facing, authToken]);
+
+  // Signing in while the camera is open starts live AI without reopening the screen
+  useEffect(() => {
+    if (isReady) send({ type: 'auth', token: authToken });
+  }, [isReady, authToken, send]);
 
   useEffect(() => {
     if (isReady) sendGarment(garmentUri, garmentType);
@@ -115,11 +132,13 @@ export function LiveStage({ garmentUri, garmentType, facing, onStatus, ref }: Li
     if (!msg) return;
     if (msg.type === 'ready') {
       // A reloaded page starts empty even though isReady is already true
-      const { garmentUri: uri, garmentType: kind, facing: side } = latest.current;
+      const { garmentUri: uri, garmentType: kind, facing: side, authToken: token } = latest.current;
       sendGarment(uri, kind);
       send({ type: 'facing', value: side });
+      send({ type: 'auth', token });
       setIsReady(true);
     } else if (msg.type === 'status') onStatus(msg.value);
+    else if (msg.type === 'ai') onAiState(msg.value);
     else captures.current.get(msg.id)?.(msg.data);
   };
 

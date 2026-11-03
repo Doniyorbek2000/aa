@@ -23,8 +23,9 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: t.tabTryOn, tabBarIcon: tabIcon('sparkles-outline') }} />
+      <Tabs.Screen name="space" options={{ title: t.tabSpace, tabBarIcon: tabIcon('bed-outline') }} />
       <Tabs.Screen name="looks" options={{ title: t.tabLooks, tabBarIcon: tabIcon('images-outline') }} />
-      <Tabs.Screen name="settings" options={{ title: t.tabSettings, tabBarIcon: tabIcon('settings-outline') }} />
+      <Tabs.Screen name="settings" options={{ title: t.tabSettings, tabBarIcon: tabIcon('person-circle-outline') }} />
     </Tabs>
   );
 }

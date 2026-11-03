@@ -17,13 +17,21 @@ export const SESSION_TTL_MS = 30 * 24 * 60 * 60_000;
 
 const otpHash = (phone: string, code: string) => sha256Hex(`${phone}:${code}`);
 
-/** A new code for this phone, or how long to wait when one was sent less than a minute ago. */
-export async function issueOtp(db: AuthDb, phone: string, now: Date): Promise<{ code: string } | { retryAfterMs: number }> {
+/**
+ * A new code for this phone, or how long to wait when one was sent less than a minute ago.
+ * `fixedCode` is only for the store-review number, whose reviewers cannot receive an SMS.
+ */
+export async function issueOtp(
+  db: AuthDb,
+  phone: string,
+  now: Date,
+  fixedCode?: string
+): Promise<{ code: string } | { retryAfterMs: number }> {
   const [existing] = await db.select().from(schema.otpCodes).where(eq(schema.otpCodes.phone, phone));
   const sinceLast = existing ? now.getTime() - existing.createdAt.getTime() : Infinity;
   if (sinceLast < OTP_RESEND_MS) return { retryAfterMs: OTP_RESEND_MS - sinceLast };
 
-  const code = generateOtp();
+  const code = fixedCode ?? generateOtp();
   const row = { codeHash: otpHash(phone, code), attempts: 0, expiresAt: new Date(now.getTime() + OTP_TTL_MS), createdAt: now };
   await db
     .insert(schema.otpCodes)

@@ -68,6 +68,12 @@ describe('SMS codes', () => {
     assert.equal(await checkOtp(db, PHONE, issued.code, at(2000)), 'expired');
   });
 
+  it('accepts the fixed code of the store-review number', async () => {
+    const db = await freshDb();
+    assert.deepEqual(await issueOtp(db, PHONE, t0, '246810'), { code: '246810' });
+    assert.equal(await checkOtp(db, PHONE, '246810', at(1000)), 'ok');
+  });
+
   it('throttles resends to one a minute', async () => {
     const db = await freshDb();
     await issueOtp(db, PHONE, t0);

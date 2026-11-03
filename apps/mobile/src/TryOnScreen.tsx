@@ -16,7 +16,7 @@ import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { absoluteAssetUrl, requestAiTryOn } from './api';
@@ -25,7 +25,8 @@ import { GarmentBar } from './GarmentBar';
 import { GarmentOverlay, type GarmentOverlayHandle } from './GarmentOverlay';
 import { useI18n } from './i18n';
 import { saveToPhotos, shareImage } from './imageActions';
-import { LiveStage, type LiveStageHandle, type LiveStatus } from './live/LiveStage';
+import { useAccount } from './account';
+import { LiveStage, type AiState, type LiveStageHandle, type LiveStatus } from './live/LiveStage';
 import { lookUri, saveLook } from './looks';
 import { usePalette, type Palette } from './theme';
 
@@ -45,6 +46,8 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
   const overlayRef = useRef<GarmentOverlayHandle | null>(null);
   const liveRef = useRef<LiveStageHandle | null>(null);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>('loading');
+  const [aiState, setAiState] = useState<AiState>('off');
+  const { token } = useAccount();
   // Body tracking needs MediaPipe from the network; without it we keep the drag-and-pinch overlay
   const isLive = liveStatus !== 'failed';
 
@@ -177,13 +180,24 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
     <View style={[styles.root, isWide && styles.rootWide]}>
       <View style={styles.stage}>
         {isFocused && isAppActive && isLive && (
-          <LiveStage ref={liveRef} garmentUri={selected} garmentType={garmentType} facing={facing} onStatus={setLiveStatus} />
+          <LiveStage
+            ref={liveRef}
+            garmentUri={selected}
+            garmentType={garmentType}
+            facing={facing}
+            authToken={token}
+            onStatus={setLiveStatus}
+            onAiState={setAiState}
+          />
         )}
         {isFocused && isAppActive && !isLive && <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />}
         {!isLive && selected && <GarmentOverlay ref={overlayRef} uri={selected} width={garmentWidth} />}
 
         <View style={[styles.topBar, { top: insets.top + 8, left: insets.left + 14, right: insets.right + 14 }]}>
-          <Text style={styles.brand}>A12</Text>
+          <View style={styles.brandRow} accessibilityRole="header" accessibilityLabel="A12">
+            <Image source={require('../assets/adaptive-icon.png')} style={styles.brandMark} contentFit="contain" />
+            <Text style={styles.brand}>A12</Text>
+          </View>
           <View style={styles.topActions}>
             {!isLive && (
               <RoundButton icon="refresh" label={t.reset} onPress={() => overlayRef.current?.reset()} styles={styles} />
@@ -196,6 +210,17 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
             />
           </View>
         </View>
+        {isLive && (aiState === 'signin' || aiState === 'limit') && (
+          <Pressable
+            style={[styles.aiBanner, { bottom: isWide ? 14 : 52 }]}
+            onPress={aiState === 'signin' ? () => router.push('/login') : undefined}
+            disabled={aiState !== 'signin'}
+            accessibilityRole={aiState === 'signin' ? 'button' : 'text'}
+          >
+            <Ionicons name={aiState === 'signin' ? 'sparkles' : 'time-outline'} size={16} color="#140f10" />
+            <Text style={styles.aiBannerText}>{aiState === 'signin' ? t.liveSignIn : t.liveLimit}</Text>
+          </Pressable>
+        )}
         {!isWide && <Text style={styles.hint}>{hint}</Text>}
       </View>
 
@@ -281,7 +306,23 @@ const makeStyles = (p: Palette) =>
     rootWide: { flexDirection: 'row' },
     stage: { flex: 1, overflow: 'hidden' },
     topBar: { position: 'absolute', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    brand: { color: '#fffffc', fontSize: 22, fontWeight: '700', letterSpacing: -0.6 },
+    brandRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    // The mark's PNG has generous padding (it doubles as the adaptive icon), so it is drawn large
+    brandMark: { width: 44, height: 44, marginLeft: -8 },
+    brand: { color: '#fffffc', fontSize: 22, fontWeight: '700', letterSpacing: -0.6, textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 6 },
+    aiBanner: {
+      position: 'absolute',
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      maxWidth: '92%',
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 999,
+      backgroundColor: p.accent,
+    },
+    aiBannerText: { color: '#140f10', fontSize: 13, fontWeight: '700' },
     topActions: { flexDirection: 'row', gap: 10 },
     round: { width: 44, height: 44, borderRadius: 22, backgroundColor: p.scrim, alignItems: 'center', justifyContent: 'center' },
     hint: {
