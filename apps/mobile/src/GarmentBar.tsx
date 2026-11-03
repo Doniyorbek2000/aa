@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { GARMENT_TYPES, normaliseGarmentUrl, type GarmentType } from './garment';
-import { t } from './i18n';
-import { colors } from './theme';
+import { useI18n } from './i18n';
+import { usePalette, type Palette } from './theme';
 
 interface GarmentBarProps {
   garments: string[];
@@ -27,9 +29,13 @@ export function GarmentBar({
   onAddLink,
   onAiTryOn,
 }: GarmentBarProps) {
+  const { t } = useI18n();
+  const p = usePalette();
+  const styles = useMemo(() => makeStyles(p), [p]);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [link, setLink] = useState('');
   const [hasLinkError, setHasLinkError] = useState(false);
+  const isDisabled = isBusy || !selected;
 
   const submitLink = () => {
     const url = normaliseGarmentUrl(link);
@@ -63,19 +69,14 @@ export function GarmentBar({
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
-        <Pressable onPress={onPickGallery} style={[styles.thumb, styles.addThumb]} accessibilityRole="button" accessibilityLabel={t.gallery}>
-          <Text style={styles.addIcon}>＋</Text>
-          <Text style={styles.addText}>{t.gallery}</Text>
-        </Pressable>
-        <Pressable
+        <AddTile icon="images-outline" label={t.gallery} onPress={onPickGallery} styles={styles} color={p.ink} />
+        <AddTile
+          icon="link-outline"
+          label={t.link}
           onPress={() => setIsLinkOpen((open) => !open)}
-          style={[styles.thumb, styles.addThumb]}
-          accessibilityRole="button"
-          accessibilityLabel={t.link}
-        >
-          <Text style={styles.addIcon}>🔗</Text>
-          <Text style={styles.addText}>{t.link}</Text>
-        </Pressable>
+          styles={styles}
+          color={p.ink}
+        />
         {garments.map((uri, i) => (
           <Pressable
             key={uri}
@@ -85,7 +86,7 @@ export function GarmentBar({
             accessibilityState={{ selected: uri === selected }}
             style={[styles.thumb, uri === selected && styles.thumbSelected]}
           >
-            <Image source={{ uri }} style={styles.thumbImage} resizeMode="cover" />
+            <Image source={{ uri }} style={styles.thumbImage} contentFit="cover" transition={150} />
           </Pressable>
         ))}
       </ScrollView>
@@ -101,9 +102,10 @@ export function GarmentBar({
               }}
               onSubmitEditing={submitLink}
               placeholder={t.linkPlaceholder}
-              placeholderTextColor={colors.muted}
+              placeholderTextColor={p.muted}
               autoCapitalize="none"
               autoCorrect={false}
+              autoFocus
               keyboardType="url"
               returnKeyType="done"
               style={styles.input}
@@ -112,46 +114,107 @@ export function GarmentBar({
               <Text style={styles.linkBtnText}>{t.linkAdd}</Text>
             </Pressable>
           </View>
-          {hasLinkError && <Text style={styles.error}>{t.linkInvalid}</Text>}
+          {hasLinkError && (
+            <Text style={styles.error} accessibilityLiveRegion="polite">
+              {t.linkInvalid}
+            </Text>
+          )}
         </View>
       )}
 
       <Pressable
         onPress={onAiTryOn}
-        disabled={isBusy || !selected}
+        disabled={isDisabled}
         accessibilityRole="button"
-        accessibilityState={{ disabled: isBusy || !selected, busy: isBusy }}
-        style={({ pressed }) => [styles.cta, (isBusy || !selected) && styles.ctaDisabled, pressed && styles.ctaPressed]}
+        accessibilityState={{ disabled: isDisabled, busy: isBusy }}
+        style={({ pressed }) => [styles.cta, isDisabled && styles.ctaDisabled, pressed && styles.ctaPressed]}
       >
-        <Text style={styles.ctaText}>{isBusy ? t.aiBusy : `✨ ${t.aiBtn}`}</Text>
+        {isBusy ? <ActivityIndicator color={p.onInk} /> : <Ionicons name="sparkles" size={18} color={p.onInk} />}
+        <Text style={styles.ctaText}>{isBusy ? t.aiBusy : t.aiBtn}</Text>
       </Pressable>
     </View>
   );
 }
 
+type Styles = ReturnType<typeof makeStyles>;
+
+function AddTile({
+  icon,
+  label,
+  onPress,
+  styles,
+  color,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  styles: Styles;
+  color: string;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.thumb, styles.addThumb]} accessibilityRole="button" accessibilityLabel={label}>
+      <Ionicons name={icon} size={20} color={color} />
+      <Text style={styles.addText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const THUMB = 64;
 
-const styles = StyleSheet.create({
-  panel: { gap: 12, padding: 14, backgroundColor: colors.paper, borderRadius: 20 },
-  types: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.line, minHeight: 36, justifyContent: 'center' },
-  chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
-  chipText: { color: colors.ink, fontSize: 13, fontWeight: '500' },
-  chipTextActive: { color: colors.paper },
-  strip: { gap: 8 },
-  thumb: { width: THUMB, height: THUMB * 1.25, borderRadius: 12, overflow: 'hidden', backgroundColor: colors.wash, borderWidth: 2, borderColor: 'transparent' },
-  thumbSelected: { borderColor: colors.accent },
-  thumbImage: { width: '100%', height: '100%' },
-  addThumb: { alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderColor: colors.line },
-  addIcon: { fontSize: 18, color: colors.ink },
-  addText: { fontSize: 11, color: colors.body, marginTop: 2 },
-  linkRow: { flexDirection: 'row', gap: 8 },
-  input: { flex: 1, minHeight: 44, borderWidth: 1, borderColor: colors.line, borderRadius: 10, paddingHorizontal: 12, color: colors.ink, fontSize: 14 },
-  linkBtn: { minHeight: 44, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.ink, justifyContent: 'center' },
-  linkBtnText: { color: colors.paper, fontWeight: '600' },
-  error: { color: colors.accent, fontSize: 12, marginTop: 6 },
-  cta: { minHeight: 52, borderRadius: 12, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
-  ctaDisabled: { opacity: 0.55 },
-  ctaPressed: { opacity: 0.85 },
-  ctaText: { color: colors.paper, fontSize: 16, fontWeight: '600' },
-});
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    panel: { gap: 12, padding: 14, backgroundColor: p.paper, borderRadius: 20 },
+    types: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+    chip: {
+      paddingHorizontal: 14,
+      minHeight: 36,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: p.line,
+      justifyContent: 'center',
+    },
+    chipActive: { backgroundColor: p.ink, borderColor: p.ink },
+    chipText: { color: p.ink, fontSize: 13, fontWeight: '500' },
+    chipTextActive: { color: p.onInk },
+    strip: { gap: 8 },
+    thumb: {
+      width: THUMB,
+      height: THUMB * 1.25,
+      borderRadius: 12,
+      overflow: 'hidden',
+      backgroundColor: p.wash,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    thumbSelected: { borderColor: p.accent },
+    thumbImage: { width: '100%', height: '100%' },
+    addThumb: { alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderColor: p.line, gap: 4 },
+    addText: { fontSize: 11, color: p.body },
+    linkRow: { flexDirection: 'row', gap: 8 },
+    input: {
+      flex: 1,
+      minHeight: 44,
+      borderWidth: 1,
+      borderColor: p.line,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      color: p.ink,
+      fontSize: 14,
+    },
+    linkBtn: { minHeight: 44, paddingHorizontal: 16, borderRadius: 10, backgroundColor: p.ink, justifyContent: 'center' },
+    linkBtnText: { color: p.onInk, fontWeight: '600' },
+    error: { color: p.accent, fontSize: 12, marginTop: 6 },
+    cta: {
+      minHeight: 52,
+      borderRadius: 12,
+      backgroundColor: p.ink,
+      flexDirection: 'row',
+      gap: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+    },
+    ctaDisabled: { opacity: 0.5 },
+    ctaPressed: { opacity: 0.85 },
+    ctaText: { color: p.onInk, fontSize: 16, fontWeight: '600' },
+  });

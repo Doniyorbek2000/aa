@@ -5,11 +5,14 @@
     "version": "1.0.0",
     "orientation": "default",
     "icon": "../../logo.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "scheme": "a12anywear",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ai.a12.anywear"
+      "bundleIdentifier": "ai.a12.anywear",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "ai.a12.anywear",
@@ -17,13 +20,23 @@
         "foregroundImage": "../../logo.png",
         "backgroundColor": "#fffffc"
       },
-      "permissions": ["android.permission.CAMERA", "android.permission.INTERNET"],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [
         "expo-splash-screen",
-        { "image": "../../logo.png", "imageWidth": 180, "resizeMode": "contain", "backgroundColor": "#fffffc" }
+        {
+          "image": "../../logo.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#fffffc"
+        }
       ],
       [
         "expo-camera",
@@ -41,10 +54,24 @@
       ],
       "expo-sharing",
       "expo-localization",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-router",
+      "expo-web-browser",
+      "expo-image",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Pick garment photos and save your try-on looks.",
+          "savePhotosPermission": "Save your try-on looks to your photos.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://a12.uz"
+    },
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }

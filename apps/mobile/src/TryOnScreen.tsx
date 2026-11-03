@@ -1,12 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Animated,
-  Image,
-  Linking as RNLinking,
+  Linking,
   Modal,
-  PanResponder,
   Pressable,
   StyleSheet,
   Text,
@@ -16,63 +13,63 @@ import {
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import * as Linking from 'expo-linking';
-import * as Sharing from 'expo-sharing';
-import { File, Paths } from 'expo-file-system';
+import { Image } from 'expo-image';
+import { useFocusEffect } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { absoluteAssetUrl, requestAiTryOn } from './api';
-import { DEMO_GARMENT_PATHS, dataUrl, garmentFromQuery, splitDataUrl, type GarmentType } from './garment';
+import { DEMO_GARMENT_PATHS, dataUrl, type GarmentType } from './garment';
 import { GarmentBar } from './GarmentBar';
-import { t } from './i18n';
-import { colors } from './theme';
+import { GarmentOverlay, type GarmentOverlayHandle } from './GarmentOverlay';
+import { useI18n } from './i18n';
+import { saveToPhotos, shareImage } from './imageActions';
+import { lookUri, saveLook } from './looks';
+import { usePalette, type Palette } from './theme';
 
 const DEMO_GARMENTS = DEMO_GARMENT_PATHS.map(absoluteAssetUrl);
-const MIN_SCALE = 0.4;
-const MAX_SCALE = 2.2;
-const SCALE_STEP = 0.15;
 // Side-by-side layout once there is room for camera plus a usable panel (tablets, landscape)
 const WIDE_BREAKPOINT = 720;
+const SIDE_PANEL_WIDTH = 380;
 
-export function TryOnScreen() {
+export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | null }) {
+  const { t } = useI18n();
+  const p = usePalette();
+  const styles = useMemo(() => makeStyles(p), [p]);
   const [permission, requestPermission] = useCameraPermissions();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraView | null>(null);
+  const overlayRef = useRef<GarmentOverlayHandle | null>(null);
 
+  const [isFocused, setIsFocused] = useState(true);
   const [facing, setFacing] = useState<CameraType>('front');
   const [garments, setGarments] = useState<string[]>(DEMO_GARMENTS);
   const [selected, setSelected] = useState<string | null>(DEMO_GARMENTS[0] ?? null);
   const [garmentType, setGarmentType] = useState<GarmentType>('upper_body');
-  const [scale, setScale] = useState(1);
   const [isBusy, setIsBusy] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [resultUri, setResultUri] = useState<string | null>(null);
 
-  const offset = useRef(new Animated.ValueXY()).current;
-  const pan = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) + Math.abs(g.dy) > 4,
-      onPanResponderGrant: () => offset.extractOffset(),
-      onPanResponderMove: Animated.event([null, { dx: offset.x, dy: offset.y }], { useNativeDriver: false }),
-      onPanResponderRelease: () => offset.flattenOffset(),
-    })
-  ).current;
+  // Release the camera while another tab is open
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      return () => setIsFocused(false);
+    }, [])
+  );
 
-  const addGarment = (uri: string) => {
+  const addGarment = useCallback((uri: string) => {
     setGarments((prev) => [uri, ...prev.filter((g) => g !== uri)].slice(0, 12));
     setSelected(uri);
-  };
+  }, []);
 
-  // Garments arriving from the storefront widget or a shared link: a12anywear://try?garment=https://…
-  const incomingUrl = Linking.useLinkingURL();
   useEffect(() => {
-    if (!incomingUrl) return;
-    const garment = garmentFromQuery(Linking.parse(incomingUrl).queryParams);
-    if (garment) addGarment(garment);
-  }, [incomingUrl]);
+    if (incomingGarment) addGarment(incomingGarment);
+  }, [incomingGarment, addGarment]);
 
   const selectGarment = (uri: string) => {
     void Haptics.selectionAsync();
     setSelected(uri);
+    overlayRef.current?.reset();
   };
 
   const pickFromGallery = async () => {
@@ -93,10 +90,13 @@ export function TryOnScreen() {
       const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.6 });
       if (!photo?.base64) throw new Error('No camera photo');
       const rendered = await requestAiTryOn(dataUrl(photo.base64), selected, garmentType);
+      const look = await saveLook(rendered, garmentType);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setResult(rendered);
-    } catch {
-      Alert.alert(t.aiError);
+      setResultUri(lookUri(look));
+    } catch (error) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const isOffline = error instanceof TypeError && /network/i.test(error.message);
+      Alert.alert(isOffline ? t.networkError : t.aiError);
     } finally {
       setIsBusy(false);
     }
@@ -108,98 +108,115 @@ export function TryOnScreen() {
       { text: t.continue, onPress: () => void runAiTryOn() },
     ]);
 
-  const shareResult = async () => {
-    const parts = result ? splitDataUrl(result) : null;
-    if (!parts) return;
+  const handleSaveToPhotos = async () => {
+    if (!resultUri) return;
     try {
-      const file = new File(Paths.cache, `a12-look-${Date.now()}.${parts.extension}`);
-      await file.write(parts.base64, { encoding: 'base64' });
-      await Sharing.shareAsync(file.uri, { mimeType: parts.mimeType, dialogTitle: t.resultTitle });
+      const isSaved = await saveToPhotos(resultUri);
+      Alert.alert(isSaved ? t.savedToPhotos : t.photosDenied);
     } catch {
-      Alert.alert(t.aiError);
+      Alert.alert(t.photosDenied);
     }
   };
 
-  if (!permission) return <View style={styles.center}><ActivityIndicator color={colors.ink} /></View>;
+  if (!permission) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={p.ink} />
+      </View>
+    );
+  }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <View style={styles.permIcon}>
+          <Ionicons name="camera-outline" size={34} color={p.ink} />
+        </View>
         <Text style={styles.permTitle}>{t.camTitle}</Text>
         <Text style={styles.permBody}>{t.camBody}</Text>
         <Pressable
-          style={styles.permBtn}
+          style={styles.primaryBtn}
           accessibilityRole="button"
-          onPress={() => (permission.canAskAgain ? void requestPermission() : void RNLinking.openSettings())}
+          onPress={() => (permission.canAskAgain ? void requestPermission() : void Linking.openSettings())}
         >
-          <Text style={styles.permBtnText}>{permission.canAskAgain ? t.camAllow : t.camSettings}</Text>
+          <Text style={styles.primaryBtnText}>{permission.canAskAgain ? t.camAllow : t.camSettings}</Text>
         </Pressable>
       </View>
     );
   }
 
   const isWide = width >= WIDE_BREAKPOINT || width > height;
-  const garmentWidth = Math.min(width, isWide ? width - 380 : width) * 0.62;
-
-  const bar = (
-    <GarmentBar
-      garments={garments}
-      selected={selected}
-      garmentType={garmentType}
-      isBusy={isBusy}
-      onSelect={selectGarment}
-      onTypeChange={setGarmentType}
-      onPickGallery={() => void pickFromGallery()}
-      onAddLink={addGarment}
-      onAiTryOn={confirmAiTryOn}
-    />
-  );
+  const stageWidth = isWide ? width - SIDE_PANEL_WIDTH : width;
+  const garmentWidth = Math.min(stageWidth, 520) * 0.6;
 
   return (
     <View style={[styles.root, isWide && styles.rootWide]}>
       <View style={styles.stage}>
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
-        {selected && (
-          <Animated.View
-            {...pan.panHandlers}
-            style={[styles.overlay, { transform: [...offset.getTranslateTransform(), { scale }] }]}
-          >
-            <Image source={{ uri: selected }} style={{ width: garmentWidth, height: garmentWidth * 1.25 }} resizeMode="contain" />
-          </Animated.View>
-        )}
+        {isFocused && <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />}
+        {selected && <GarmentOverlay ref={overlayRef} uri={selected} width={garmentWidth} />}
 
-        <View style={[styles.topBar, { top: insets.top + 8, left: insets.left + 12, right: insets.right + 12 }]}>
+        <View style={[styles.topBar, { top: insets.top + 8, left: insets.left + 14, right: insets.right + 14 }]}>
           <Text style={styles.brand}>A12</Text>
           <View style={styles.topActions}>
-            <RoundButton label="−" a11y="Smaller" onPress={() => setScale((s) => Math.max(MIN_SCALE, s - SCALE_STEP))} />
-            <RoundButton label="+" a11y="Bigger" onPress={() => setScale((s) => Math.min(MAX_SCALE, s + SCALE_STEP))} />
-            <RoundButton label="⟲" a11y={t.flip} onPress={() => setFacing((f) => (f === 'front' ? 'back' : 'front'))} />
+            <RoundButton icon="refresh" label={t.reset} onPress={() => overlayRef.current?.reset()} styles={styles} />
+            <RoundButton
+              icon="camera-reverse-outline"
+              label={t.flip}
+              onPress={() => setFacing((f) => (f === 'front' ? 'back' : 'front'))}
+              styles={styles}
+            />
           </View>
         </View>
-        {!isWide && <Text style={[styles.hint, { bottom: 8 }]}>{t.hint}</Text>}
+        {!isWide && <Text style={styles.hint}>{t.hint}</Text>}
       </View>
 
       <View
         style={
           isWide
-            ? [styles.sidePanel, { paddingTop: insets.top + 12, paddingRight: insets.right + 12, paddingBottom: insets.bottom + 12 }]
-            : [styles.bottomPanel, { paddingBottom: insets.bottom + 10, paddingLeft: insets.left + 10, paddingRight: insets.right + 10 }]
+            ? [styles.sidePanel, { paddingTop: insets.top + 12, paddingRight: insets.right + 12 }]
+            : [styles.bottomPanel, { paddingLeft: insets.left + 10, paddingRight: insets.right + 10 }]
         }
       >
         {isWide && <Text style={styles.sideHint}>{t.hint}</Text>}
-        {bar}
+        <GarmentBar
+          garments={garments}
+          selected={selected}
+          garmentType={garmentType}
+          isBusy={isBusy}
+          onSelect={selectGarment}
+          onTypeChange={setGarmentType}
+          onPickGallery={() => void pickFromGallery()}
+          onAddLink={addGarment}
+          onAiTryOn={confirmAiTryOn}
+        />
       </View>
 
-      <Modal visible={result !== null} animationType="slide" onRequestClose={() => setResult(null)} supportedOrientations={['portrait', 'landscape']}>
-        <View style={[styles.result, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
-          <Text style={styles.resultTitle}>{t.resultTitle}</Text>
-          {result && <Image source={{ uri: result }} style={styles.resultImage} resizeMode="contain" />}
-          <View style={styles.resultActions}>
-            <Pressable style={[styles.permBtn, styles.flex]} onPress={() => void shareResult()} accessibilityRole="button">
-              <Text style={styles.permBtnText}>{t.share}</Text>
+      <Modal
+        visible={resultUri !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setResultUri(null)}
+        supportedOrientations={['portrait', 'landscape']}
+      >
+        <View style={[styles.result, { paddingBottom: insets.bottom + 12 }]}>
+          <View style={styles.resultHead}>
+            <Text style={styles.resultTitle}>{t.resultTitle}</Text>
+            <Pressable onPress={() => setResultUri(null)} accessibilityRole="button" accessibilityLabel={t.close} hitSlop={10}>
+              <Ionicons name="close" size={26} color={p.ink} />
             </Pressable>
-            <Pressable style={[styles.ghostBtn, styles.flex]} onPress={() => setResult(null)} accessibilityRole="button">
-              <Text style={styles.ghostBtnText}>{t.close}</Text>
+          </View>
+          <Text style={styles.resultNote}>✓ {t.savedToLooks}</Text>
+          {resultUri && <Image source={{ uri: resultUri }} style={styles.resultImage} contentFit="contain" />}
+          <View style={styles.resultActions}>
+            <Pressable
+              style={[styles.primaryBtn, styles.flex]}
+              onPress={() => resultUri && void shareImage(resultUri, t.resultTitle).catch(() => {})}
+              accessibilityRole="button"
+            >
+              <Text style={styles.primaryBtnText}>{t.share}</Text>
+            </Pressable>
+            <Pressable style={[styles.ghostBtn, styles.flex]} onPress={() => void handleSaveToPhotos()} accessibilityRole="button">
+              <Text style={styles.ghostBtnText}>{t.saveToPhotos}</Text>
             </Pressable>
           </View>
         </View>
@@ -208,38 +225,61 @@ export function TryOnScreen() {
   );
 }
 
-function RoundButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+function RoundButton({
+  icon,
+  label,
+  onPress,
+  styles,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  styles: ReturnType<typeof makeStyles>;
+}) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} hitSlop={6} style={styles.round}>
-      <Text style={styles.roundText}>{label}</Text>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={styles.round}>
+      <Ionicons name={icon} size={21} color="#fffffc" />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
-  rootWide: { flexDirection: 'row' },
-  stage: { flex: 1, overflow: 'hidden' },
-  overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  topBar: { position: 'absolute', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { color: colors.paper, fontSize: 20, fontWeight: '700', letterSpacing: -0.5 },
-  topActions: { flexDirection: 'row', gap: 8 },
-  round: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.scrim, alignItems: 'center', justifyContent: 'center' },
-  roundText: { color: colors.paper, fontSize: 20, fontWeight: '600' },
-  hint: { position: 'absolute', alignSelf: 'center', color: colors.paper, fontSize: 12, backgroundColor: colors.scrim, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, overflow: 'hidden' },
-  bottomPanel: { paddingTop: 10, backgroundColor: '#000' },
-  sidePanel: { width: 380, paddingLeft: 12, backgroundColor: colors.wash, gap: 12 },
-  sideHint: { color: colors.muted, fontSize: 13 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14, backgroundColor: colors.paper },
-  permTitle: { fontSize: 24, fontWeight: '600', color: colors.ink, textAlign: 'center' },
-  permBody: { fontSize: 15, lineHeight: 22, color: colors.body, textAlign: 'center', maxWidth: 420 },
-  permBtn: { minHeight: 52, borderRadius: 12, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
-  permBtnText: { color: colors.paper, fontSize: 16, fontWeight: '600' },
-  ghostBtn: { minHeight: 52, borderRadius: 12, borderWidth: 1.5, borderColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
-  ghostBtnText: { color: colors.ink, fontSize: 16, fontWeight: '600' },
-  result: { flex: 1, backgroundColor: colors.paper, paddingHorizontal: 16, gap: 14 },
-  resultTitle: { fontSize: 22, fontWeight: '600', color: colors.ink },
-  resultImage: { flex: 1, width: '100%', borderRadius: 14, backgroundColor: colors.wash },
-  resultActions: { flexDirection: 'row', gap: 10 },
-  flex: { flex: 1 },
-});
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: '#000' },
+    rootWide: { flexDirection: 'row' },
+    stage: { flex: 1, overflow: 'hidden' },
+    topBar: { position: 'absolute', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    brand: { color: '#fffffc', fontSize: 22, fontWeight: '700', letterSpacing: -0.6 },
+    topActions: { flexDirection: 'row', gap: 10 },
+    round: { width: 44, height: 44, borderRadius: 22, backgroundColor: p.scrim, alignItems: 'center', justifyContent: 'center' },
+    hint: {
+      position: 'absolute',
+      bottom: 10,
+      alignSelf: 'center',
+      color: '#fffffc',
+      fontSize: 12,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      overflow: 'hidden',
+    },
+    bottomPanel: { paddingTop: 8, paddingBottom: 8, backgroundColor: '#000' },
+    sidePanel: { width: SIDE_PANEL_WIDTH, paddingLeft: 12, paddingBottom: 12, backgroundColor: p.wash, gap: 12 },
+    sideHint: { color: p.muted, fontSize: 13 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 14, backgroundColor: p.paper },
+    permIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: p.wash, alignItems: 'center', justifyContent: 'center' },
+    permTitle: { fontSize: 26, fontWeight: '600', color: p.ink, textAlign: 'center', letterSpacing: -0.6 },
+    permBody: { fontSize: 15, lineHeight: 22, color: p.body, textAlign: 'center', maxWidth: 420 },
+    primaryBtn: { minHeight: 52, borderRadius: 12, backgroundColor: p.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+    primaryBtnText: { color: p.onInk, fontSize: 16, fontWeight: '600' },
+    ghostBtn: { minHeight: 52, borderRadius: 12, borderWidth: 1.5, borderColor: p.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+    ghostBtnText: { color: p.ink, fontSize: 15, fontWeight: '600' },
+    result: { flex: 1, backgroundColor: p.paper, padding: 16, gap: 12 },
+    resultHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    resultTitle: { fontSize: 24, fontWeight: '600', color: p.ink, letterSpacing: -0.5 },
+    resultNote: { fontSize: 13, color: p.muted },
+    resultImage: { flex: 1, width: '100%', borderRadius: 16, backgroundColor: p.wash },
+    resultActions: { flexDirection: 'row', gap: 10 },
+    flex: { flex: 1 },
+  });
