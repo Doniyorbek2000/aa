@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "A12 Try-On",
+    "name": "A12",
     "slug": "a12-anywear-ai",
     "version": "1.0.0",
     "orientation": "default",
@@ -17,8 +17,8 @@
     "android": {
       "package": "ai.a12.anywear",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#fffffc"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -32,10 +32,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/icon.png",
-          "imageWidth": 180,
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#fffffc"
+          "backgroundColor": "#fffffc",
+          "dark": {
+            "image": "./assets/splash-logo-dark.png",
+            "backgroundColor": "#121014"
+          }
         }
       ],
       [
