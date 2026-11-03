@@ -4,7 +4,7 @@
     "slug": "a12-anywear-ai",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "../../logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "a12anywear",
     "ios": {
@@ -17,7 +17,7 @@
     "android": {
       "package": "ai.a12.anywear",
       "adaptiveIcon": {
-        "foregroundImage": "../../logo.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#fffffc"
       },
       "permissions": [
@@ -32,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "../../logo.png",
+          "image": "./assets/icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
           "backgroundColor": "#fffffc"
@@ -75,3 +75,4 @@
     }
   }
 }
+
