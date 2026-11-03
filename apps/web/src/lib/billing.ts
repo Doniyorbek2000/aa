@@ -3,7 +3,7 @@
  * front (the session cap). The write only lands if usedSeconds is unchanged since it was read,
  * so concurrent visitors cannot overspend a plan.
  */
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte, sum } from 'drizzle-orm';
 import type { AuthDb } from './auth/store.ts';
 import * as schema from '../db/schema.ts';
 
@@ -83,6 +83,25 @@ export async function refundStoreSeconds(db: AuthDb, storeId: string, seconds: n
       .returning({ id: schema.stores.id });
     if (saved) return;
   }
+}
+
+// One full live session a day for each signed-in app user, unless FREE_APP_SECONDS_PER_DAY says otherwise
+export const DEFAULT_FREE_APP_SECONDS = 180;
+
+export function freeAppSeconds(raw: string | undefined): number {
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 && value <= 86_400 ? value : DEFAULT_FREE_APP_SECONDS;
+}
+
+/** Live AI seconds an app user was granted since `since` (the last 24 hours). */
+export async function appSecondsUsedSince(db: AuthDb, userId: string, since: Date): Promise<number> {
+  const [row] = await db
+    .select({ seconds: sum(schema.liveSessions.seconds) })
+    .from(schema.liveSessions)
+    .where(
+      and(eq(schema.liveSessions.userId, userId), eq(schema.liveSessions.source, 'app'), gte(schema.liveSessions.createdAt, since))
+    );
+  return Number(row?.seconds ?? 0);
 }
 
 export async function recordLiveSession(

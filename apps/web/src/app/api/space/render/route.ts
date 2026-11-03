@@ -1,4 +1,5 @@
 import { getDb } from '@/db';
+import { userFromRequest } from '@/lib/auth/session';
 import { chargeStoreSession, recordLiveSession, refundStoreSeconds } from '@/lib/billing';
 import { decartAllowedOrigins, isAllowedOrigin, maxSessionsPerDay } from '@/lib/decart';
 import { editImage, IMAGE_PLAN_SECONDS, IMAGE_TYPES, imageResponse } from '@/lib/decart-image';
@@ -27,7 +28,10 @@ function imageFile(value: FormDataEntryValue | null): File | null {
 export async function POST(request: Request) {
   const apiKey = process.env.DECART_API_KEY;
   if (!apiKey) return fail(503, 'Room preview is not configured.');
-  if (!isAllowedOrigin(request.headers.get('origin'), decartAllowedOrigins(process.env.DECART_ALLOWED_ORIGINS))) {
+  // The website is checked by its Origin; the mobile app sends none, so it must be signed in instead
+  const isSignedInApp =
+    request.headers.get('x-a12-client') === 'app' && !!process.env.DATABASE_URL && !!(await userFromRequest(request).catch(() => null));
+  if (!isSignedInApp && !isAllowedOrigin(request.headers.get('origin'), decartAllowedOrigins(process.env.DECART_ALLOWED_ORIGINS))) {
     return fail(403, 'Origin not allowed.');
   }
   const now = new Date();

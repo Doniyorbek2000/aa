@@ -1,7 +1,14 @@
 import { createDecartClient } from '@decartai/sdk';
 import { getDb } from '@/db';
 import { userFromRequest } from '@/lib/auth/session';
-import { chargeStoreSession, recordLiveSession, refundStoreSeconds } from '@/lib/billing';
+import {
+  MIN_SESSION_SECONDS,
+  appSecondsUsedSince,
+  chargeStoreSession,
+  freeAppSeconds,
+  recordLiveSession,
+  refundStoreSeconds,
+} from '@/lib/billing';
 import { decartAllowedOrigins, decartTokenOptions, isAllowedOrigin, maxSessionSeconds, maxSessionsPerDay } from '@/lib/decart';
 import { clientIp, createRateLimiter } from '@/lib/rate-limit';
 
@@ -41,6 +48,16 @@ export async function POST(request: Request) {
 
   let seconds = maxSessionSeconds(process.env.DECART_MAX_SESSION_SECONDS);
   let storeId: string | null = null;
+  const user = hasDb ? await userFromRequest(request).catch(() => null) : null;
+  if (source === 'app' && !storeKey) {
+    // The mobile app is free to download, so its live AI needs an account and a daily allowance
+    if (!user) return Response.json({ error: 'Sign in to use live AI.', reason: 'sign-in' }, { status: 401 });
+    const left = freeAppSeconds(process.env.FREE_APP_SECONDS_PER_DAY) - (await appSecondsUsedSince(getDb(), user.id, new Date(now.getTime() - DAY_MS)));
+    if (left < MIN_SESSION_SECONDS) {
+      return Response.json({ error: 'Today’s free live AI time is used up.', reason: 'daily-limit' }, { status: 402 });
+    }
+    seconds = Math.min(seconds, left);
+  }
   if (storeKey && hasDb) {
     const charge = await chargeStoreSession(getDb(), storeKey, seconds, now);
     if (!charge.ok) {
@@ -54,7 +71,6 @@ export async function POST(request: Request) {
   try {
     const token = await createDecartClient({ apiKey }).tokens.create(decartTokenOptions(origins, seconds));
     if (hasDb) {
-      const user = await userFromRequest(request).catch(() => null);
       await recordLiveSession(getDb(), { storeId, userId: user?.id ?? null, source, seconds }).catch((error: unknown) =>
         console.error('Live session not recorded', error instanceof Error ? error.message : 'unknown error')
       );
