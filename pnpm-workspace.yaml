@@ -1,2 +1,8 @@
 packages:
   - apps/web
+# Install scripts that may run: esbuild (used by drizzle-kit for migrations).
+# Prisma arrives only as an optional peer of drizzle-orm and is not used.
+allowBuilds:
+  '@prisma/engines': false
+  esbuild: true
+  prisma: false

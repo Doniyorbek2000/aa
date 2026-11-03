@@ -1,0 +1,100 @@
+import { boolean, index, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+
+const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
+
+export const userRole = pgEnum('user_role', ['user', 'admin']);
+
+/** Someone who signed in with a phone number (SMS code) or a Google account. */
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  phone: text('phone').unique(),
+  email: text('email').unique(),
+  googleSub: text('google_sub').unique(),
+  name: text('name'),
+  role: userRole('role').notNull().default('user'),
+  createdAt: createdAt(),
+});
+
+/** Signed-in sessions; only a SHA-256 of the token is stored, so a database leak cannot sign anyone in. */
+export const sessions = pgTable(
+  'sessions',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('sessions_user_idx').on(t.userId)]
+);
+
+/** The pending SMS code per phone number (hashed), with a wrong-guess counter. */
+export const otpCodes = pgTable('otp_codes', {
+  phone: text('phone').primaryKey(),
+  codeHash: text('code_hash').notNull(),
+  attempts: integer('attempts').notNull().default(0),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+});
+
+/** Monthly store plans: live AI minutes included and the price in so'm. */
+export const plans = pgTable('plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  monthlyMinutes: integer('monthly_minutes').notNull(),
+  priceUzs: integer('price_uzs').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: createdAt(),
+});
+
+export const storeStatus = pgEnum('store_status', ['active', 'paused']);
+
+/** A shop using A12 on its site; live AI seconds are counted against its plan each period. */
+export const stores = pgTable('stores', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  ownerId: uuid('owner_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict' }),
+  planId: uuid('plan_id').references(() => plans.id, { onDelete: 'set null' }),
+  status: storeStatus('status').notNull().default('active'),
+  /** Public key the shop's widget sends; identifies the store, grants nothing else. */
+  widgetKey: text('widget_key').notNull().unique(),
+  usedSeconds: integer('used_seconds').notNull().default(0),
+  periodStart: timestamp('period_start', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: createdAt(),
+});
+
+export const garmentKind = pgEnum('garment_kind', ['upper_body', 'lower_body', 'dresses']);
+
+/** A store's catalogue item shown in its try-on. */
+export const garments = pgTable(
+  'garments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    storeId: uuid('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    imageUrl: text('image_url').notNull(),
+    kind: garmentKind('kind').notNull().default('upper_body'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index('garments_store_idx').on(t.storeId)]
+);
+
+/** One live AI session granted, with the seconds reserved for it (the session cap). */
+export const liveSessions = pgTable(
+  'live_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    storeId: uuid('store_id').references(() => stores.id, { onDelete: 'set null' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    source: text('source').notNull(),
+    seconds: integer('seconds').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('live_sessions_store_idx').on(t.storeId, t.createdAt)]
+);

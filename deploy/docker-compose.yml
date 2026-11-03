@@ -12,16 +12,44 @@ services:
       args:
         NEXT_PUBLIC_SITE_URL: https://a12.uz
     restart: unless-stopped
-    # Secrets (DECART_API_KEY, HF_TOKEN) live in deploy/.env on the server, never in git
+    # Secrets (DECART_API_KEY, HF_TOKEN, POSTGRES_PASSWORD, ...) live in deploy/.env on the server, never in git
     env_file:
       - path: .env
         required: false
+    environment:
+      DATABASE_URL: postgres://a12:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}@db:5432/a12
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       proxy:
         aliases: [adm, webpul-web]
+      internal: {}
+
+  # Users, stores, plans and usage. Reachable only from the app, never published to the internet.
+  db:
+    container_name: adm-db
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: a12
+      POSTGRES_DB: a12
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - a12-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U a12 -d a12']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      internal: {}
+
+volumes:
+  a12-db:
 
 networks:
   proxy:
     external: true
     name: nurbozor_default
-
+  internal: {}
