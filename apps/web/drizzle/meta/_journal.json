@@ -15,6 +15,13 @@
       "when": 1793706006881,
       "tag": "0001_video_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793706316200,
+      "tag": "0002_payments",
+      "breakpoints": true
     }
   ]
 }

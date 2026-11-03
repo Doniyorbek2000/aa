@@ -1,4 +1,6 @@
-import { boolean, index, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, customType, index, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+
+const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({ dataType: () => 'bytea' });
 
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 
@@ -63,7 +65,59 @@ export const stores = pgTable('stores', {
   widgetKey: text('widget_key').notNull().unique(),
   usedSeconds: integer('used_seconds').notNull().default(0),
   periodStart: timestamp('period_start', { withTimezone: true }).notNull().defaultNow(),
+  /** Bought top-up seconds; spent after the monthly plan runs out and never reset. */
+  extraSeconds: integer('extra_seconds').notNull().default(0),
   createdAt: createdAt(),
+});
+
+/** One-off top-ups of live AI minutes a shop can buy on top of its plan. */
+export const packs = pgTable('packs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  minutes: integer('minutes').notNull(),
+  priceUzs: integer('price_uzs').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: createdAt(),
+});
+
+export const paymentKind = pgEnum('payment_kind', ['plan', 'pack']);
+export const paymentStatus = pgEnum('payment_status', ['pending', 'approved', 'rejected']);
+
+/**
+ * A shop's card transfer for a plan or a pack, with the receipt it uploaded. An admin checks
+ * the transfer and approves it, which grants the minutes.
+ */
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    storeId: uuid('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    kind: paymentKind('kind').notNull(),
+    planId: uuid('plan_id').references(() => plans.id, { onDelete: 'set null' }),
+    packId: uuid('pack_id').references(() => packs.id, { onDelete: 'set null' }),
+    /** What was bought, copied at the time so later price edits do not rewrite history. */
+    title: text('title').notNull(),
+    minutes: integer('minutes').notNull(),
+    amountUzs: integer('amount_uzs').notNull(),
+    receipt: bytea('receipt').notNull(),
+    receiptType: text('receipt_type').notNull(),
+    status: paymentStatus('status').notNull().default('pending'),
+    adminNote: text('admin_note'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('payments_status_idx').on(t.status, t.createdAt), index('payments_store_idx').on(t.storeId)]
+);
+
+/** Admin-editable values: the card shops pay to, and the dollar rate for cost reports. */
+export const settings = pgTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
 });
 
 export const garmentKind = pgEnum('garment_kind', ['upper_body', 'lower_body', 'dresses']);

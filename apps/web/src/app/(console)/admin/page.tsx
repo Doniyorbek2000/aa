@@ -3,8 +3,12 @@ import { redirect } from 'next/navigation';
 import { getDb, schema } from '@/db';
 import { maskPhone } from '@/lib/auth/phone';
 import { currentUser } from '@/lib/auth/session';
+import { getSettings, usdRate } from '@/lib/payments';
 import { ConsoleHeader } from '../console-header';
 import { createPlan, createStore, resetStoreUsage, togglePlan, updateStore } from './actions';
+import { FinanceSection } from './finance-section';
+import { PacksSettingsSection } from './packs-settings-section';
+import { PaymentsSection } from './payments-section';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,7 +56,8 @@ export default async function AdminPage() {
   const user = await currentUser();
   if (!user) redirect('/login?next=/admin');
   if (user.role !== 'admin') redirect('/dashboard');
-  const { stats, plans, storeRows } = await loadAdminData();
+  const [{ stats, plans, storeRows }, settings] = await Promise.all([loadAdminData(), getSettings(getDb())]);
+  const rate = usdRate(settings);
   const activePlans = plans.filter((plan) => plan.isActive);
 
   return (
@@ -67,8 +72,10 @@ export default async function AdminPage() {
           <div className="stat"><b>{stats.today}</b><span>AI sessiya (bugun)</span></div>
           <div className="stat"><b>{stats.month}</b><span>AI sessiya (30 kun)</span></div>
           <div className="stat"><b>{minutes(stats.monthSeconds)}</b><span>AI vaqt (30 kun)</span></div>
-          <div className="stat"><b>${(stats.monthSeconds * USD_PER_LIVE_SECOND).toFixed(2)}</b><span>Decart xarajati (taxminan)</span></div>
         </section>
+
+        <FinanceSection />
+        <PaymentsSection />
 
         <section className="card">
           <h2>Do‘konlar</h2>
@@ -138,15 +145,18 @@ export default async function AdminPage() {
           </form>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Tarif</th><th>AI daqiqa</th><th>Narx</th><th>Bizga tannarxi</th><th>Holat</th><th /></tr></thead>
+              <thead><tr><th>Tarif</th><th>AI daqiqa</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda (to‘liq sarflansa)</th><th>Holat</th><th /></tr></thead>
               <tbody>
-                {plans.length === 0 && <tr><td colSpan={6} className="muted">Hali tarif yo‘q.</td></tr>}
+                {plans.length === 0 && <tr><td colSpan={7} className="muted">Hali tarif yo‘q.</td></tr>}
                 {plans.map((plan) => (
                   <tr key={plan.id}>
                     <td>{plan.name}</td>
                     <td>{plan.monthlyMinutes}</td>
                     <td>{som(plan.priceUzs)}</td>
-                    <td>${(plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND).toFixed(0)}</td>
+                    <td>{som(Math.round(plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate))} (${(plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND).toFixed(0)})</td>
+                    <td style={{ color: plan.priceUzs - plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>
+                      {som(Math.round(plan.priceUzs - plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate))}
+                    </td>
                     <td><span className={plan.isActive ? 'badge badge-ok' : 'badge badge-off'}>{plan.isActive ? 'faol' : 'yopiq'}</span></td>
                     <td>
                       <form action={togglePlan}>
@@ -160,6 +170,8 @@ export default async function AdminPage() {
             </table>
           </div>
         </section>
+
+        <PacksSettingsSection />
       </main>
     </>
   );

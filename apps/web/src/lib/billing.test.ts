@@ -60,6 +60,19 @@ describe('chargeStoreSession', () => {
     assert.deepEqual(await chargeStoreSession(noPlan.db, 'wk_0123456789abcdef', 60, t0), { ok: false, reason: 'no-plan' });
   });
 
+  it('spends bought top-up seconds after the plan, and works on top-ups alone', async () => {
+    const { db, store, used } = await setup({ usedSeconds: 290, extraSeconds: 100 });
+    const charge = await chargeStoreSession(db, 'wk_0123456789abcdef', 60, t0);
+    assert.ok(charge.ok && charge.seconds === 60);
+    const [after] = await db.select().from(schema.stores).where(eq(schema.stores.id, store.id));
+    assert.equal(await used(), 300);
+    assert.equal(after?.extraSeconds, 50);
+
+    const packOnly = await setup({ planId: null, extraSeconds: 45 });
+    const packCharge = await chargeStoreSession(packOnly.db, 'wk_0123456789abcdef', 180, t0);
+    assert.ok(packCharge.ok && packCharge.seconds === 45);
+  });
+
   it('gives seconds back for a session that never started', async () => {
     const { db, store, used } = await setup();
     await chargeStoreSession(db, 'wk_0123456789abcdef', 180, t0);

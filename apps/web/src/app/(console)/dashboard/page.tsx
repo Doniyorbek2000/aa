@@ -37,6 +37,7 @@ export default async function DashboardPage() {
           <h1>Do‘konim</h1>
           {rows.length > 0 && (
             <div className="form-row">
+              <a className="btn" href="/dashboard/billing" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Tarif va to‘lov</a>
               <a className="btn btn-ghost" href="/dashboard/studio" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Fotostudiya</a>
               <a className="btn btn-ghost" href="/dashboard/live" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Jonli efir</a>
               <a className="btn btn-ghost" href="/dashboard/video" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Video reklama</a>
@@ -66,6 +67,7 @@ export default async function DashboardPage() {
                     <span className="muted"> · {Math.round(store.usedSeconds / 60)} / {plan?.monthlyMinutes} AI daqiqa · {renews} da yangilanadi</span>
                   )}
                 </p>
+                {store.extraSeconds > 0 && <p>Qo‘shimcha paket: <b>{Math.floor(store.extraSeconds / 60)} AI daqiqa</b> <span className="muted">(oy o‘tsa ham yonmaydi)</span></p>}
                 {limit > 0 && <div className="bar" role="progressbar" aria-valuenow={usedPct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${usedPct}%` }} /></div>}
                 <p className="muted">Daqiqalar tugaganda mijozlaringiz uchun bepul kuzatish rejimi ishlashda davom etadi.</p>
               </div>
