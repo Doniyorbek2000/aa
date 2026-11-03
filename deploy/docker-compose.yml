@@ -12,6 +12,10 @@ services:
       args:
         NEXT_PUBLIC_SITE_URL: https://a12.uz
     restart: unless-stopped
+    # Secrets (DECART_API_KEY, HF_TOKEN) live in deploy/.env on the server, never in git
+    env_file:
+      - path: .env
+        required: false
     networks:
       proxy:
         aliases: [adm, webpul-web]

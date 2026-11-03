@@ -2,7 +2,18 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import type { PoseLandmarker } from '@mediapipe/tasks-vision';
 import { useI18n } from '@/lib/i18n';
+import {
+  POSE_INDEX,
+  clearEdgeBackground,
+  easePlacement,
+  opaqueBounds,
+  placeGarment,
+  type BodyPoints,
+  type GarmentPlacement,
+} from '@/lib/live-pose';
+import { useDecartLive } from './use-decart-live';
 
 export const CWS_URL = '/install';
 
@@ -59,167 +70,71 @@ export function PoweredByA12() {
 }
 
 /**
- * Strips light/studio background pixels from a garment image using corner-flood
- * chrominance + luminance distance and applies soft edge feathering so the garment
- * drapes cleanly over the live camera stream.
+ * Cuts the garment out of its studio background (edge flood fill, so white parts of the
+ * garment survive) and crops it to the garment, keeping the photo's proportions.
  */
 function createCleanGarmentCanvas(img: HTMLImageElement): HTMLCanvasElement {
   const off = document.createElement('canvas');
-  const w = Math.min(540, img.naturalWidth || 420);
-  const h = Math.min(720, img.naturalHeight || 560);
+  const scale = Math.min(1, 512 / Math.max(img.naturalWidth || 420, img.naturalHeight || 560));
+  const w = Math.max(1, Math.round((img.naturalWidth || 420) * scale));
+  const h = Math.max(1, Math.round((img.naturalHeight || 560) * scale));
   off.width = w;
   off.height = h;
-  const ctx = off.getContext('2d');
+  const ctx = off.getContext('2d', { willReadFrequently: true });
   if (!ctx) return off;
   ctx.drawImage(img, 0, 0, w, h);
 
   try {
     const imgData = ctx.getImageData(0, 0, w, h);
-    const d = imgData.data;
-    // Sample 4 corners to estimate studio background color
-    const tl = 0;
-    const tr = (w - 1) * 4;
-    const bl = (h - 1) * w * 4;
-    const brIdx = ((h - 1) * w + (w - 1)) * 4;
-
-    const br = ((d[tl] ?? 250) + (d[tr] ?? 250) + (d[bl] ?? 250) + (d[brIdx] ?? 250)) / 4;
-    const bg =
-      ((d[tl + 1] ?? 250) + (d[tr + 1] ?? 250) + (d[bl + 1] ?? 250) + (d[brIdx + 1] ?? 250)) / 4;
-    const bb =
-      ((d[tl + 2] ?? 250) + (d[tr + 2] ?? 250) + (d[bl + 2] ?? 250) + (d[brIdx + 2] ?? 250)) / 4;
-    const isUniformBg = br > 185 && bg > 185 && bb > 185;
-
-    if (isUniformBg) {
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i] ?? 255;
-        const g = d[i + 1] ?? 255;
-        const b = d[i + 2] ?? 255;
-        const dist = Math.hypot(r - br, g - bg, b - bb);
-        if (dist < 28) {
-          d[i + 3] = 0;
-        } else if (dist < 56) {
-          d[i + 3] = Math.round(((dist - 28) / 28) * 255);
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-    }
+    if (clearEdgeBackground(imgData.data, w, h)) ctx.putImageData(imgData, 0, 0);
+    const box = opaqueBounds(imgData.data, w, h);
+    if (!box) return off;
+    const cropped = document.createElement('canvas');
+    cropped.width = box.w;
+    cropped.height = box.h;
+    cropped.getContext('2d')?.drawImage(off, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+    return cropped;
   } catch {
     // Cross-origin image without CORS headers: keep as-is
+    return off;
   }
-  return off;
 }
 
-interface BodyPoseState {
-  normX: number; // 0..1 horizontal torso center
-  normY: number; // 0..1 vertical shoulder-torso anchor
-  scale: number; // relative torso width scale (0.75..1.35)
-  tilt: number; // shoulder tilt in radians
-  vx: number;
-  vy: number;
-  ambientBrightness: number;
+const MEDIAPIPE_WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.0/wasm';
+const POSE_MODEL_URL =
+  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task';
+// Keep the garment through brief tracking drops instead of flickering
+const LOST_BODY_GRACE_MS = 400;
+
+/** Loads MediaPipe Pose (GPU when available) on demand, so the page bundle stays small. */
+async function createPoseLandmarker(): Promise<PoseLandmarker> {
+  const vision = await import('@mediapipe/tasks-vision');
+  const files = await vision.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
+  const options = (delegate: 'GPU' | 'CPU') => ({
+    baseOptions: { modelAssetPath: POSE_MODEL_URL, delegate },
+    runningMode: 'VIDEO' as const,
+    numPoses: 1,
+  });
+  return vision.PoseLandmarker.createFromOptions(files, options('GPU')).catch(() =>
+    vision.PoseLandmarker.createFromOptions(files, options('CPU'))
+  );
 }
 
-/**
- * Real-time 30 FPS person silhouette & face/skin centroid tracker on a tiny 64x48
- * analysis canvas. Tracks where the user stands in the camera frame and their
- * shoulder width without blocking the main thread.
- */
-function analyzePersonPose(
-  probeCtx: CanvasRenderingContext2D,
-  sourceCanvas: HTMLCanvasElement,
-  prev: BodyPoseState
-): BodyPoseState {
-  const pw = 64;
-  const ph = 48;
-  probeCtx.drawImage(sourceCanvas, 0, 0, pw, ph);
-  const frame = probeCtx.getImageData(0, 0, pw, ph).data;
-
-  // Estimate background from top-left and top-right corners
-  const bgR = ((frame[0] ?? 128) + (frame[(pw - 1) * 4] ?? 128)) * 0.5;
-  const bgG = ((frame[1] ?? 128) + (frame[(pw - 1) * 4 + 1] ?? 128)) * 0.5;
-  const bgB = ((frame[2] ?? 128) + (frame[(pw - 1) * 4 + 2] ?? 128)) * 0.5;
-
-  let sumX = 0;
-  let sumY = 0;
-  let sumW = 0;
-  let minX = pw;
-  let maxX = 0;
-  let lumTotal = 0;
-  let lumCount = 0;
-
-  for (let y = 4; y < ph - 2; y++) {
-    for (let x = 4; x < pw - 4; x++) {
-      const idx = (y * pw + x) * 4;
-      const r = frame[idx] ?? 0;
-      const g = frame[idx + 1] ?? 0;
-      const b = frame[idx + 2] ?? 0;
-
-      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-      lumTotal += luma;
-      lumCount++;
-
-      // Foreground contrast + skin/warmth likelihood in upper-middle region
-      const fgDist = Math.hypot(r - bgR, g - bgG, b - bgB);
-      const isSkinTone = r > 75 && g > 40 && b > 25 && r > g && r - b > 15;
-      const centerBias = 1 - Math.abs(x / pw - 0.5) * 0.65;
-      const weight = (fgDist > 34 ? fgDist * 0.8 : 0) + (isSkinTone ? 45 : 0);
-      const weighted = weight * centerBias;
-
-      if (weighted > 28) {
-        sumX += x * weighted;
-        sumY += y * weighted;
-        sumW += weighted;
-        if (y > ph * 0.28 && y < ph * 0.75) {
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-        }
-      }
-    }
-  }
-
-  const avgLuma = lumCount > 0 ? lumTotal / lumCount : 140;
-  const targetAmbient = Math.max(0.78, Math.min(1.12, avgLuma / 145));
-
-  if (sumW < 500) {
-    return {
-      ...prev,
-      ambientBrightness: prev.ambientBrightness * 0.9 + targetAmbient * 0.1,
-    };
-  }
-
-  const rawNormX = Math.max(0.28, Math.min(0.72, sumX / sumW / pw));
-  const rawNormY = Math.max(0.42, Math.min(0.66, sumY / sumW / ph + 0.08));
-  const spanRatio = maxX > minX ? (maxX - minX) / pw : 0.44;
-  const rawScale = Math.max(0.82, Math.min(1.24, spanRatio / 0.44));
-
-  const nextVx = (rawNormX - prev.normX) * 0.25 + prev.vx * 0.65;
-  const nextVy = (rawNormY - prev.normY) * 0.25 + prev.vy * 0.65;
-  const nextX = prev.normX + nextVx;
-  const nextY = prev.normY + nextVy;
-  const nextScale = prev.scale * 0.86 + rawScale * 0.14;
-  const nextTilt = Math.max(-0.12, Math.min(0.12, nextVx * -2.2));
-
-  return {
-    normX: nextX,
-    normY: nextY,
-    scale: nextScale,
-    tilt: prev.tilt * 0.82 + nextTilt * 0.18,
-    vx: nextVx,
-    vy: nextVy,
-    ambientBrightness: prev.ambientBrightness * 0.9 + targetAmbient * 0.1,
-  };
+/** Default spot on the chest when there is no body to track (demo video, model unavailable). */
+function centredPlacement(cw: number, ch: number, aspect: number): GarmentPlacement {
+  const w = cw * 0.46;
+  return { x: cw / 2, y: ch * 0.27, w, h: w * aspect, angle: 0 };
 }
 
 /**
- * Renders the garment using a 16-strip horizontal cloth mesh that bends, sways,
- * and tracks the user's body velocity and shoulder angle in real time at 30 FPS.
+ * Draws the garment hung from its tracked anchor as 16 horizontal strips, so the hem
+ * trails a little behind sideways body movement (vx, px per frame) like real cloth.
  */
 function drawWarpedGarmentMesh(
   ctx: CanvasRenderingContext2D,
   garmentCanvas: HTMLCanvasElement,
-  cw: number,
-  ch: number,
-  pose: BodyPoseState,
+  place: GarmentPlacement,
+  vx: number,
   now: number,
   hdEnhanced: boolean
 ) {
@@ -227,51 +142,32 @@ function drawWarpedGarmentMesh(
   const srcW = garmentCanvas.width;
   const srcH = garmentCanvas.height;
 
-  const baseW = cw * 0.46 * pose.scale;
-  const baseH = ch * 0.66 * pose.scale;
-  const centerX = cw * pose.normX;
-  const topY = ch * (pose.normY - 0.27 * pose.scale) + Math.sin(now * 0.0028) * 3.0;
-
   ctx.save();
-  ctx.translate(centerX, topY + baseH * 0.25);
-  ctx.rotate(pose.tilt);
-  ctx.translate(-centerX, -(topY + baseH * 0.25));
-
-  const brightPct = Math.round(pose.ambientBrightness * (hdEnhanced ? 104 : 100));
-  const contrastPct = hdEnhanced ? 108 : 102;
-  ctx.filter = `brightness(${brightPct}%) contrast(${contrastPct}%) saturate(${hdEnhanced ? 108 : 102}%)`;
-
+  ctx.translate(place.x, place.y);
+  ctx.rotate(place.angle);
+  if (hdEnhanced) ctx.filter = 'contrast(108%) saturate(108%)';
   ctx.shadowColor = 'rgba(15, 5, 10, 0.36)';
   ctx.shadowBlur = hdEnhanced ? 28 : 20;
   ctx.shadowOffsetY = 8;
 
   const sliceSrcH = srcH / slices;
-  const sliceDstH = baseH / slices;
-
+  const sliceDstH = place.h / slices;
   for (let i = 0; i < slices; i++) {
-    const progress = i / (slices - 1); // 0 at collar/shoulders -> 1 at hem
-    // Lower cloth hem sways more with body horizontal velocity + natural air wave
-    const clothInertia = -pose.vx * cw * 1.8 * Math.pow(progress, 1.35);
-    const waveOffset = Math.sin(now * 0.0036 + progress * 3.4) * (1.2 + progress * 3.2);
-    const perspectiveWidthFactor = 1 + Math.sin(progress * Math.PI) * 0.025;
-
-    const dstW = baseW * perspectiveWidthFactor;
-    const dstX = centerX - dstW / 2 + clothInertia + waveOffset;
-    const dstY = topY + i * sliceDstH;
-
+    const progress = i / (slices - 1); // 0 at collar/waist -> 1 at hem
+    const clothInertia = -vx * 1.8 * Math.pow(progress, 1.35);
+    const waveOffset = Math.sin(now * 0.0036 + progress * 3.4) * progress * 2;
     ctx.drawImage(
       garmentCanvas,
       0,
       i * sliceSrcH,
       srcW,
       sliceSrcH + 0.8,
-      dstX,
-      dstY,
-      dstW,
+      -place.w / 2 + clothInertia + waveOffset,
+      i * sliceDstH,
+      place.w,
       sliceDstH + 0.9
     );
   }
-
   ctx.restore();
 }
 
@@ -303,25 +199,29 @@ export function LiveTryOnModal({
   const camVideoRef = useRef<HTMLVideoElement | null>(null);
   const fallbackVideoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const probeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const cleanGarmentRef = useRef<HTMLCanvasElement | null>(null);
   const hdModeRef = useRef<boolean>(false);
-  const poseRef = useRef<BodyPoseState>({
-    normX: 0.5,
-    normY: 0.54,
-    scale: 1,
-    tilt: 0,
-    vx: 0,
-    vy: 0,
-    ambientBrightness: 1,
-  });
+  const landmarkerRef = useRef<PoseLandmarker | null>(null);
+  const bodyRef = useRef<BodyPoints | null>(null);
+  const placementRef = useRef<GarmentPlacement | null>(null);
+  const garmentTypeRef = useRef<LeffaGarmentType>('upper_body');
+  const garmentImgRef = useRef<HTMLImageElement | null>(null);
+  const decart = useDecartLive();
 
   useEffect(() => {
     hdModeRef.current = hdNeuralActive;
   }, [hdNeuralActive]);
+
+  useEffect(() => {
+    garmentTypeRef.current = garmentType;
+    placementRef.current = null;
+    if (garmentImgRef.current) decart.setGarment(garmentImgRef.current, garmentType);
+  }, [garmentType, decart]);
+
+  useEffect(() => () => landmarkerRef.current?.close(), []);
 
   const stopCameraAndLoop = useCallback(() => {
     if (rafRef.current !== null) {
@@ -338,7 +238,8 @@ export function LiveTryOnModal({
     if (fallbackVideoRef.current) {
       fallbackVideoRef.current.pause();
     }
-  }, []);
+    decart.stop();
+  }, [decart]);
 
   const revealGarments = useCallback((count: number) => {
     setThumbsVisible(new Array(count).fill(false));
@@ -436,6 +337,8 @@ export function LiveTryOnModal({
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         cleanGarmentRef.current = createCleanGarmentCanvas(img);
+        garmentImgRef.current = img;
+        decart.setGarment(img, garmentTypeRef.current);
         setTimeout(() => {
           setStatusText('');
           setGarmentsApplied((c) => c + 1);
@@ -454,7 +357,7 @@ export function LiveTryOnModal({
         void runOpenSourceNeuralTryOn(activeModel, url);
       }
     },
-    [activeModel, runOpenSourceNeuralTryOn, t.dressingStatus]
+    [activeModel, decart, runOpenSourceNeuralTryOn, t.dressingStatus]
   );
 
   const startRenderLoop = useCallback(() => {
@@ -462,14 +365,9 @@ export function LiveTryOnModal({
       cancelAnimationFrame(rafRef.current);
     }
 
-    if (!probeCanvasRef.current && typeof document !== 'undefined') {
-      const p = document.createElement('canvas');
-      p.width = 64;
-      p.height = 48;
-      probeCanvasRef.current = p;
-    }
-
-    let frameCounter = 0;
+    let lastVideoTime = -1;
+    let lostAt = 0;
+    let vx = 0;
 
     const renderFrame = (now: number) => {
       const canvas = canvasRef.current;
@@ -484,19 +382,45 @@ export function LiveTryOnModal({
 
       const camVid = camVideoRef.current;
       const fbVid = fallbackVideoRef.current;
+      const isCameraLive = !!camVid && camVid.readyState >= 2 && !!streamRef.current;
+      // Decart's AI-rendered video replaces the camera and the overlay while it is streaming
+      const aiVideo = isCameraLive ? decart.liveVideo() : null;
 
-      if (camVid && camVid.readyState >= 2 && streamRef.current) {
-        // Draw mirrored webcam feed covering the stage
+      if (camVid && isCameraLive) {
+        // Draw the mirrored feed covering the stage
+        const source = aiVideo ?? camVid;
         ctx.save();
         ctx.translate(cw, 0);
         ctx.scale(-1, 1);
-        const vw = camVid.videoWidth || 1280;
-        const vh = camVid.videoHeight || 720;
+        const vw = source.videoWidth || 1280;
+        const vh = source.videoHeight || 720;
         const scale = Math.max(cw / vw, ch / vh);
         const dw = vw * scale;
         const dh = vh * scale;
-        ctx.drawImage(camVid, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+        ctx.drawImage(source, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
         ctx.restore();
+
+        const landmarker = landmarkerRef.current;
+        if (!aiVideo && landmarker && camVid.currentTime !== lastVideoTime) {
+          lastVideoTime = camVid.currentTime;
+          const lm = landmarker.detectForVideo(camVid, now).landmarks[0];
+          // Landmarks are normalised to the video; map them through the same cover-fit and mirror
+          const toCanvas = (i: number) => {
+            const p = lm?.[i];
+            if (!p) return undefined;
+            return { x: cw - ((cw - dw) / 2 + p.x * dw), y: (ch - dh) / 2 + p.y * dh, v: p.visibility ?? 1 };
+          };
+          bodyRef.current = lm
+            ? {
+                ls: toCanvas(POSE_INDEX.ls),
+                rs: toCanvas(POSE_INDEX.rs),
+                lh: toCanvas(POSE_INDEX.lh),
+                rh: toCanvas(POSE_INDEX.rh),
+                la: toCanvas(POSE_INDEX.la),
+                ra: toCanvas(POSE_INDEX.ra),
+              }
+            : null;
+        }
       } else if (fbVid && fbVid.readyState >= 2) {
         const vw = fbVid.videoWidth || 1280;
         const vh = fbVid.videoHeight || 720;
@@ -508,34 +432,34 @@ export function LiveTryOnModal({
         ctx.drawImage(fbVid, sx, sy, sw, sh, 0, 0, cw, ch);
       }
 
-      // Update body pose every 2nd frame for ultra-smooth 30 FPS performance
-      frameCounter++;
-      if (frameCounter % 2 === 0 && probeCanvasRef.current) {
-        const pCtx = probeCanvasRef.current.getContext('2d');
-        if (pCtx) {
-          poseRef.current = analyzePersonPose(pCtx, canvas, poseRef.current);
-        }
-      }
-
-      // Composite garment using 16-slice body-tracked cloth mesh
       const garmentSource = cleanGarmentRef.current;
-      if (garmentSource) {
-        drawWarpedGarmentMesh(
-          ctx,
-          garmentSource,
-          cw,
-          ch,
-          poseRef.current,
-          now,
-          hdModeRef.current
-        );
+      if (garmentSource && !aiVideo) {
+        const aspect = garmentSource.height / garmentSource.width;
+        const isTracking = isCameraLive && !!landmarkerRef.current;
+        const body = bodyRef.current;
+        const target = isTracking
+          ? body && placeGarment(garmentTypeRef.current, body, aspect)
+          : centredPlacement(cw, ch, aspect);
+
+        const prev = placementRef.current;
+        if (target) {
+          placementRef.current = easePlacement(prev, target);
+          vx = prev ? placementRef.current.x - prev.x : 0;
+          lostAt = 0;
+        } else {
+          if (!lostAt) lostAt = now;
+          if (now - lostAt > LOST_BODY_GRACE_MS) placementRef.current = null;
+        }
+        if (placementRef.current) {
+          drawWarpedGarmentMesh(ctx, garmentSource, placementRef.current, vx, now, hdModeRef.current);
+        }
       }
 
       rafRef.current = requestAnimationFrame(renderFrame);
     };
 
     rafRef.current = requestAnimationFrame(renderFrame);
-  }, []);
+  }, [decart]);
 
   const startExperience = useCallback(async () => {
     if (connecting) return;
@@ -569,6 +493,18 @@ export function LiveTryOnModal({
       setStep(2);
       revealGarments(garmentList.length);
       startRenderLoop();
+      // Photoreal AI try-on when the server has a Decart key; otherwise the tracked overlay below
+      void decart.start(mediaStream);
+      // Body tracking arrives a moment later; until then (or if it cannot load) the garment stays centred
+      if (!landmarkerRef.current) {
+        createPoseLandmarker()
+          .then((landmarker) => {
+            landmarkerRef.current = landmarker;
+          })
+          .catch(() => {
+            landmarkerRef.current = null;
+          });
+      }
       window.setTimeout(() => {
         setStatusText('');
         if (initialGarmentUrl) applyGarment(initialGarmentUrl);
