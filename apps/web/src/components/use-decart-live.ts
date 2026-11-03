@@ -87,11 +87,16 @@ export function useDecartLive() {
   }, []);
 
   const start = useCallback(
-    async (camera: MediaStream) => {
+    async (camera: MediaStream, storeKey?: string | null) => {
       if (stateRef.current === 'connecting' || stateRef.current === 'live') return;
       stateRef.current = 'connecting';
       try {
-        const res = await fetch('/api/decart-token', { method: 'POST' });
+        // A shop's widget key bills its plan; a 402 (minutes used up) falls back to the free overlay
+        const res = await fetch('/api/decart-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(storeKey ? { storeKey, source: 'widget' } : { source: 'web' }),
+        });
         const data = (await res.json().catch(() => ({}))) as { apiKey?: unknown };
         if (!res.ok || typeof data.apiKey !== 'string') throw new Error('No live AI token');
 

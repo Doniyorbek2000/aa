@@ -20,6 +20,7 @@ export function AnywearStudioShell() {
   const [siteIndex, setSiteIndex] = useState(0);
   const [hostVisible, setHostVisible] = useState(true);
   const [initialGarment, setInitialGarment] = useState<string | null>(null);
+  const [storeKey, setStoreKey] = useState<string | null>(null);
 
   // Fake-browser URL bar: cycle between shopping sites every 2.6s
   useEffect(() => {
@@ -43,8 +44,12 @@ export function AnywearStudioShell() {
         if (garment && /^https:\/\//i.test(garment) && garment.length <= 2048) {
           setInitialGarment(garment);
         }
+        // ...and the shop's widget key, so its live AI minutes are counted against its plan
+        const store = u.searchParams.get('store');
+        if (store && /^[A-Za-z0-9_-]{16,64}$/.test(store)) setStoreKey(store);
         u.searchParams.delete('try');
         u.searchParams.delete('garment');
+        u.searchParams.delete('store');
         window.history.replaceState(
           null,
           '',
@@ -200,6 +205,7 @@ export function AnywearStudioShell() {
         open={tryModalOpen}
         onClose={() => setTryModalOpen(false)}
         initialGarmentUrl={initialGarment}
+        storeKey={storeKey}
       />
 
       {/* ═══ Mobile handoff modal ═══ */}

@@ -1,8 +1,7 @@
-import { describe, it } from 'node:test';
+﻿import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DECART_MODEL,
-  createRateLimiter,
   decartAllowedOrigins,
   decartPrompt,
   decartTokenOptions,
@@ -10,6 +9,7 @@ import {
   maxSessionSeconds,
   maxSessionsPerDay,
 } from './decart.ts';
+import { createRateLimiter } from './rate-limit.ts';
 
 describe('decart config', () => {
   it('keeps only exact https origins and falls back to a12.uz', () => {

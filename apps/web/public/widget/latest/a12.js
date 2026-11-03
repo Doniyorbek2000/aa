@@ -4,6 +4,8 @@
   var script = document.currentScript;
   // The bookmark preview has no script tag, so it sets __A12_ORIGIN__ before running this code
   var ORIGIN = window.__A12_ORIGIN__ || (script && script.src ? new URL(script.src).origin : 'https://a12.uz');
+  // Shop key from the dashboard: <script src=".../a12.js" data-store="KEY">; counts try-ons against its plan
+  var STORE = (script && script.getAttribute('data-store')) || window.__A12_STORE__ || '';
   var MIN_SIZE = 120;
   var scanTimer = null;
 
@@ -15,7 +17,7 @@
   function openTryOn(img, e) {
     e.preventDefault();
     e.stopPropagation();
-    var url = ORIGIN + '/?try=1&garment=' + encodeURIComponent(garmentUrl(img));
+    var url = ORIGIN + '/?try=1&garment=' + encodeURIComponent(garmentUrl(img)) + (STORE ? '&store=' + encodeURIComponent(STORE) : '');
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 

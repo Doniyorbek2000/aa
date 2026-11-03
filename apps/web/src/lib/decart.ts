@@ -68,22 +68,3 @@ export function decartPrompt(kind: LiveGarmentKind): string {
   }
   return "Substitute the person's current top with the garment shown in the reference image, keeping their trousers unchanged";
 }
-
-/**
- * Fixed-window limiter keyed by client (IP). shortcut: lives in this server instance's memory,
- * so limits reset on restart and are per instance; move to Redis if the site runs several instances.
- */
-export function createRateLimiter(limit: number, windowMs: number): (key: string, now: number) => boolean {
-  const windows = new Map<string, { start: number; count: number }>();
-  return (key, now) => {
-    const current = windows.get(key);
-    if (!current || now - current.start >= windowMs) {
-      if (windows.size > 10_000) windows.clear();
-      windows.set(key, { start: now, count: 1 });
-      return true;
-    }
-    if (current.count >= limit) return false;
-    windows.set(key, { start: current.start, count: current.count + 1 });
-    return true;
-  };
-}

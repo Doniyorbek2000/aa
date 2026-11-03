@@ -175,10 +175,13 @@ export function LiveTryOnModal({
   open,
   onClose,
   initialGarmentUrl = null,
+  storeKey = null,
 }: {
   open: boolean;
   onClose: () => void;
   initialGarmentUrl?: string | null | undefined;
+  /** Widget key of the shop that sent the visitor; its plan pays for the live AI minutes. */
+  storeKey?: string | null | undefined;
 }) {
   const { t } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -496,7 +499,7 @@ export function LiveTryOnModal({
       revealGarments(garmentList.length);
       startRenderLoop();
       // Photoreal AI try-on when the server has a Decart key; otherwise the tracked overlay below
-      void decart.start(mediaStream);
+      void decart.start(mediaStream, storeKey);
       // Body tracking arrives a moment later; until then (or if it cannot load) the garment stays centred
       if (!landmarkerRef.current) {
         createPoseLandmarker()
@@ -528,11 +531,13 @@ export function LiveTryOnModal({
   }, [
     applyGarment,
     connecting,
+    decart,
     garmentList.length,
     initialGarmentUrl,
     revealGarments,
     startRenderLoop,
     stopCameraAndLoop,
+    storeKey,
     t.cameraNotFoundError,
     t.cameraPermissionError,
     t.cameraSecureContextError,

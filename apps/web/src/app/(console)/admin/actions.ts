@@ -1,0 +1,76 @@
+'use server';
+
+import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { getDb, schema } from '@/db';
+import { normaliseUzPhone } from '@/lib/auth/phone';
+import { currentUser } from '@/lib/auth/session';
+import { envList, userForPhone } from '@/lib/auth/store';
+import { randomToken } from '@/lib/auth/tokens';
+import { int, oneOf, text, uuid } from '../validate';
+
+// Every action re-checks the role: a server action is a public endpoint, not just a button
+async function requireAdmin() {
+  const user = await currentUser();
+  if (!user || user.role !== 'admin') redirect('/login?next=/admin');
+  return user;
+}
+
+const done = () => revalidatePath('/admin');
+
+export async function createPlan(form: FormData) {
+  await requireAdmin();
+  const name = text(form, 'name', 40);
+  const monthlyMinutes = int(form, 'monthlyMinutes', 1, 100_000);
+  const priceUzs = int(form, 'priceUzs', 0, 1_000_000_000);
+  if (!name || monthlyMinutes === null || priceUzs === null) return;
+  await getDb().insert(schema.plans).values({ name, monthlyMinutes, priceUzs });
+  done();
+}
+
+export async function togglePlan(form: FormData) {
+  await requireAdmin();
+  const id = uuid(form, 'id');
+  if (!id) return;
+  const db = getDb();
+  const [plan] = await db.select().from(schema.plans).where(eq(schema.plans.id, id));
+  if (plan) await db.update(schema.plans).set({ isActive: !plan.isActive }).where(eq(schema.plans.id, id));
+  done();
+}
+
+/** Connects a shop: its owner signs in with this phone number to reach the dashboard. */
+export async function createStore(form: FormData) {
+  await requireAdmin();
+  const name = text(form, 'name', 80);
+  const phoneRaw = text(form, 'ownerPhone', 30);
+  const phone = phoneRaw ? normaliseUzPhone(phoneRaw) : null;
+  const planId = uuid(form, 'planId');
+  if (!name || !phone) return;
+  const db = getDb();
+  const owner = await userForPhone(db, phone, envList(process.env.ADMIN_PHONES));
+  await db.insert(schema.stores).values({ name, ownerId: owner.id, planId, widgetKey: `wk_${randomToken(24)}` });
+  done();
+}
+
+export async function updateStore(form: FormData) {
+  await requireAdmin();
+  const id = uuid(form, 'id');
+  if (!id) return;
+  const planId = form.get('planId') === '' ? null : uuid(form, 'planId');
+  const status = oneOf(form, 'status', ['active', 'paused'] as const);
+  await getDb()
+    .update(schema.stores)
+    .set({ ...(form.has('planId') ? { planId } : {}), ...(status ? { status } : {}) })
+    .where(eq(schema.stores.id, id));
+  done();
+}
+
+/** Starts a fresh monthly allowance now, e.g. after the shop has paid. */
+export async function resetStoreUsage(form: FormData) {
+  await requireAdmin();
+  const id = uuid(form, 'id');
+  if (!id) return;
+  await getDb().update(schema.stores).set({ usedSeconds: 0, periodStart: new Date() }).where(eq(schema.stores.id, id));
+  done();
+}
