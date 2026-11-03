@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Linking,
   Modal,
   Platform,
@@ -48,6 +49,13 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
   const isLive = liveStatus !== 'failed';
 
   const [isFocused, setIsFocused] = useState(true);
+  const [isAppActive, setIsAppActive] = useState(AppState.currentState === 'active');
+
+  // Live AI bills while it generates: drop the camera and the session whenever the app is in the background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => setIsAppActive(state === 'active'));
+    return () => subscription.remove();
+  }, []);
   const [facing, setFacing] = useState<CameraType>('front');
   const [garments, setGarments] = useState<string[]>(DEMO_GARMENTS);
   const [selected, setSelected] = useState<string | null>(DEMO_GARMENTS[0] ?? null);
@@ -168,10 +176,10 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
   return (
     <View style={[styles.root, isWide && styles.rootWide]}>
       <View style={styles.stage}>
-        {isFocused && isLive && (
+        {isFocused && isAppActive && isLive && (
           <LiveStage ref={liveRef} garmentUri={selected} garmentType={garmentType} facing={facing} onStatus={setLiveStatus} />
         )}
-        {isFocused && !isLive && <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />}
+        {isFocused && isAppActive && !isLive && <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />}
         {!isLive && selected && <GarmentOverlay ref={overlayRef} uri={selected} width={garmentWidth} />}
 
         <View style={[styles.topBar, { top: insets.top + 8, left: insets.left + 14, right: insets.right + 14 }]}>

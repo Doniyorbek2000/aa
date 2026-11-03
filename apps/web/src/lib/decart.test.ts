@@ -45,9 +45,9 @@ describe('decart config', () => {
   });
 
   it('tells the model which part of the outfit to replace', () => {
-    assert.match(decartPrompt('upper_body'), /top/);
-    assert.match(decartPrompt('lower_body'), /trousers or skirt/);
-    assert.match(decartPrompt('dresses'), /dress/);
+    assert.match(decartPrompt('upper_body'), /^Substitute the upper body garment with/);
+    assert.match(decartPrompt('lower_body'), /^Substitute the lower body garment with/);
+    assert.match(decartPrompt('dresses'), /^Substitute the outfit with/);
   });
 });
 

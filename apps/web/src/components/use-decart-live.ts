@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { RealTimeClient } from '@decartai/sdk';
 import { DECART_MODEL, decartPrompt } from '@/lib/decart';
 import type { LiveGarmentKind } from '@/lib/live-pose';
@@ -22,42 +22,6 @@ function garmentToJpeg(img: HTMLImageElement): Promise<Blob | null> {
 }
 
 /**
- * The selfie camera, mirrored, as a video track. Decart then returns a selfie view that is drawn
- * as-is, so the "AI Generated" watermark it burns in stays readable.
- */
-function mirroredTrack(camera: MediaStream): { track: MediaStreamTrack | undefined; stop: () => void } {
-  const source = document.createElement('video');
-  source.muted = true;
-  source.playsInline = true;
-  source.srcObject = camera;
-  void source.play().catch(() => {});
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  let frame = 0;
-  const draw = () => {
-    if (ctx && source.videoWidth) {
-      if (canvas.width !== source.videoWidth || canvas.height !== source.videoHeight) {
-        canvas.width = source.videoWidth;
-        canvas.height = source.videoHeight;
-      }
-      ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
-      ctx.drawImage(source, 0, 0);
-    }
-    frame = requestAnimationFrame(draw);
-  };
-  draw();
-  const track = canvas.captureStream(30).getVideoTracks()[0];
-  return {
-    track,
-    stop: () => {
-      cancelAnimationFrame(frame);
-      track?.stop();
-      source.srcObject = null;
-    },
-  };
-}
-
-/**
  * Decart realtime try-on session for the live studio. State lives in refs because the canvas
  * render loop reads it every frame; nothing here should re-render the modal.
  */
@@ -66,7 +30,6 @@ export function useDecartLive() {
   const clientRef = useRef<RealTimeClient | null>(null);
   const outputRef = useRef<HTMLVideoElement | null>(null);
   const garmentRef = useRef<{ img: HTMLImageElement; kind: LiveGarmentKind } | null>(null);
-  const mirrorRef = useRef<{ stop: () => void } | null>(null);
 
   const sendGarment = useCallback(async () => {
     const client = clientRef.current;
@@ -80,10 +43,25 @@ export function useDecartLive() {
   const stop = useCallback(() => {
     clientRef.current?.disconnect();
     clientRef.current = null;
-    mirrorRef.current?.stop();
-    mirrorRef.current = null;
     if (outputRef.current) outputRef.current.srcObject = null;
     stateRef.current = 'off';
+  }, []);
+
+  // Billing runs while frames are generated, so a hidden tab must not keep the session alive;
+  // the free overlay carries on when the visitor comes back
+  useEffect(() => {
+    const endWhenHidden = () => {
+      if (!document.hidden || (stateRef.current !== 'live' && stateRef.current !== 'connecting')) return;
+      clientRef.current?.disconnect();
+      clientRef.current = null;
+      stateRef.current = 'unavailable';
+    };
+    document.addEventListener('visibilitychange', endWhenHidden);
+    return () => {
+      document.removeEventListener('visibilitychange', endWhenHidden);
+      clientRef.current?.disconnect();
+      clientRef.current = null;
+    };
   }, []);
 
   const start = useCallback(
@@ -106,11 +84,11 @@ export function useDecartLive() {
         output.playsInline = true;
         outputRef.current = output;
 
-        const mirror = mirroredTrack(camera);
-        mirrorRef.current = mirror;
-        if (!mirror.track) throw new Error('No camera track to mirror');
-        const client = await createDecartClient({ apiKey: data.apiKey }).realtime.connect(new MediaStream([mirror.track]), {
+        const client = await createDecartClient({ apiKey: data.apiKey }).realtime.connect(camera, {
           model: models.realtime(DECART_MODEL),
+          // The SDK mirrors only what it sends, so the reply is already a selfie view and its
+          // "AI Generated" watermark reads correctly when drawn as-is
+          mirror: true,
           onRemoteStream: (remote) => {
             output.srcObject = remote;
             void output.play().catch(() => {});
@@ -135,8 +113,6 @@ export function useDecartLive() {
         clientRef.current = client;
         await sendGarment();
       } catch {
-        mirrorRef.current?.stop();
-        mirrorRef.current = null;
         stateRef.current = 'unavailable';
       }
     },

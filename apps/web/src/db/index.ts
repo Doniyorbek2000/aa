@@ -11,7 +11,8 @@ export function getDb(): Db {
   if (cached) return cached;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set');
-  cached = drizzle(postgres(url, { max: 10 }), { schema });
+  // Postgres NOTICEs (e.g. "already exists, skipping" on every migration run) are not errors
+  cached = drizzle(postgres(url, { max: 10, onnotice: () => {} }), { schema });
   return cached;
 }
 

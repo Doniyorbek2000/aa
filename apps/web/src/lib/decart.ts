@@ -58,13 +58,12 @@ export function decartTokenOptions(origins: string[], sessionSeconds: number): C
   };
 }
 
-/** Lucy reproduces the reference image; the prompt says which part of the outfit to replace. */
+/**
+ * Lucy VTON reproduces the reference image; the prompt names the region to replace, in the
+ * phrasing of Decart's VTON prompting guide (one action per prompt, under ~120 words).
+ */
 export function decartPrompt(kind: LiveGarmentKind): string {
-  if (kind === 'lower_body') {
-    return "Substitute the person's current trousers or skirt with the garment shown in the reference image, keeping their top unchanged";
-  }
-  if (kind === 'dresses') {
-    return "Substitute the person's current clothing with the dress shown in the reference image";
-  }
-  return "Substitute the person's current top with the garment shown in the reference image, keeping their trousers unchanged";
+  if (kind === 'lower_body') return 'Substitute the lower body garment with the garment shown in the reference image.';
+  if (kind === 'dresses') return 'Substitute the outfit with the garment shown in the reference image.';
+  return 'Substitute the upper body garment with the garment shown in the reference image.';
 }

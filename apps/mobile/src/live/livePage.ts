@@ -58,10 +58,11 @@ let garmentImg = null;
 let decart = null;
 let isAiLive = false;
 
+// Phrasing from Decart's VTON prompting guide: one action, the region to replace
 const PROMPTS = {
-  upper_body: "Substitute the person's current top with the garment shown in the reference image, keeping their trousers unchanged",
-  lower_body: "Substitute the person's current trousers or skirt with the garment shown in the reference image, keeping their top unchanged",
-  dresses: "Substitute the person's current clothing with the dress shown in the reference image",
+  upper_body: 'Substitute the upper body garment with the garment shown in the reference image.',
+  lower_body: 'Substitute the lower body garment with the garment shown in the reference image.',
+  dresses: 'Substitute the outfit with the garment shown in the reference image.',
 };
 
 // Garment photo on white as JPEG: the model reads a flat product shot best
