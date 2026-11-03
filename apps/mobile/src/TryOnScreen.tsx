@@ -4,6 +4,7 @@ import {
   Alert,
   Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -23,6 +24,7 @@ import { GarmentBar } from './GarmentBar';
 import { GarmentOverlay, type GarmentOverlayHandle } from './GarmentOverlay';
 import { useI18n } from './i18n';
 import { saveToPhotos, shareImage } from './imageActions';
+import { LiveStage, type LiveStageHandle, type LiveStatus } from './live/LiveStage';
 import { lookUri, saveLook } from './looks';
 import { usePalette, type Palette } from './theme';
 
@@ -40,6 +42,10 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraView | null>(null);
   const overlayRef = useRef<GarmentOverlayHandle | null>(null);
+  const liveRef = useRef<LiveStageHandle | null>(null);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>('loading');
+  // Body tracking needs MediaPipe from the network; without it we keep the drag-and-pinch overlay
+  const isLive = liveStatus !== 'failed';
 
   const [isFocused, setIsFocused] = useState(true);
   const [facing, setFacing] = useState<CameraType>('front');
@@ -53,6 +59,7 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
   useFocusEffect(
     useCallback(() => {
       setIsFocused(true);
+      setLiveStatus((s) => (s === 'failed' ? s : 'loading'));
       return () => setIsFocused(false);
     }, [])
   );
@@ -83,20 +90,26 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
     if (asset?.base64) addGarment(dataUrl(asset.base64, asset.mimeType ?? 'image/jpeg'));
   };
 
+  const takePersonFrame = async (): Promise<string> => {
+    if (isLive && liveRef.current) return liveRef.current.capture();
+    const photo = await cameraRef.current?.takePictureAsync({ base64: true, quality: 0.6 });
+    if (!photo?.base64) throw new Error('No camera photo');
+    return dataUrl(photo.base64);
+  };
+
   const runAiTryOn = async () => {
-    if (!selected || !cameraRef.current) return;
+    if (!selected || (isLive ? !liveRef.current : !cameraRef.current)) return;
     setIsBusy(true);
     try {
-      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.6 });
-      if (!photo?.base64) throw new Error('No camera photo');
-      const rendered = await requestAiTryOn(dataUrl(photo.base64), selected, garmentType);
+      const rendered = await requestAiTryOn(await takePersonFrame(), selected, garmentType);
       const look = await saveLook(rendered, garmentType);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResultUri(lookUri(look));
     } catch (error) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const isOffline = error instanceof TypeError && /network/i.test(error.message);
-      Alert.alert(isOffline ? t.networkError : t.aiError);
+      // Long text goes in the message: Android dialogs cut titles after two lines
+      Alert.alert(t.aiBtn, isOffline ? t.networkError : t.aiError);
     } finally {
       setIsBusy(false);
     }
@@ -148,17 +161,25 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
   const isWide = width >= WIDE_BREAKPOINT || width > height;
   const stageWidth = isWide ? width - SIDE_PANEL_WIDTH : width;
   const garmentWidth = Math.min(stageWidth, 520) * 0.6;
+  const hint = { loading: t.liveLoading, ai: t.liveAi, tracking: t.liveTracking, nobody: t.liveNoBody, failed: t.hint }[
+    liveStatus
+  ];
 
   return (
     <View style={[styles.root, isWide && styles.rootWide]}>
       <View style={styles.stage}>
-        {isFocused && <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />}
-        {selected && <GarmentOverlay ref={overlayRef} uri={selected} width={garmentWidth} />}
+        {isFocused && isLive && (
+          <LiveStage ref={liveRef} garmentUri={selected} garmentType={garmentType} facing={facing} onStatus={setLiveStatus} />
+        )}
+        {isFocused && !isLive && <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />}
+        {!isLive && selected && <GarmentOverlay ref={overlayRef} uri={selected} width={garmentWidth} />}
 
         <View style={[styles.topBar, { top: insets.top + 8, left: insets.left + 14, right: insets.right + 14 }]}>
           <Text style={styles.brand}>A12</Text>
           <View style={styles.topActions}>
-            <RoundButton icon="refresh" label={t.reset} onPress={() => overlayRef.current?.reset()} styles={styles} />
+            {!isLive && (
+              <RoundButton icon="refresh" label={t.reset} onPress={() => overlayRef.current?.reset()} styles={styles} />
+            )}
             <RoundButton
               icon="camera-reverse-outline"
               label={t.flip}
@@ -167,7 +188,7 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
             />
           </View>
         </View>
-        {!isWide && <Text style={styles.hint}>{t.hint}</Text>}
+        {!isWide && <Text style={styles.hint}>{hint}</Text>}
       </View>
 
       <View
@@ -177,7 +198,7 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
             : [styles.bottomPanel, { paddingLeft: insets.left + 10, paddingRight: insets.right + 10 }]
         }
       >
-        {isWide && <Text style={styles.sideHint}>{t.hint}</Text>}
+        {isWide && <Text style={styles.sideHint}>{hint}</Text>}
         <GarmentBar
           garments={garments}
           selected={selected}
@@ -198,7 +219,8 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
         onRequestClose={() => setResultUri(null)}
         supportedOrientations={['portrait', 'landscape']}
       >
-        <View style={[styles.result, { paddingBottom: insets.bottom + 12 }]}>
+        {/* pageSheet is full-screen on Android, so the status bar overlaps unless we inset */}
+        <View style={[styles.result, { paddingTop: Platform.OS === 'android' ? insets.top + 16 : 16, paddingBottom: insets.bottom + 12 }]}>
           <View style={styles.resultHead}>
             <Text style={styles.resultTitle}>{t.resultTitle}</Text>
             <Pressable onPress={() => setResultUri(null)} accessibilityRole="button" accessibilityLabel={t.close} hitSlop={10}>
@@ -216,7 +238,9 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
               <Text style={styles.primaryBtnText}>{t.share}</Text>
             </Pressable>
             <Pressable style={[styles.ghostBtn, styles.flex]} onPress={() => void handleSaveToPhotos()} accessibilityRole="button">
-              <Text style={styles.ghostBtnText}>{t.saveToPhotos}</Text>
+              <Text style={styles.ghostBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                {t.saveToPhotos}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -256,6 +280,8 @@ const makeStyles = (p: Palette) =>
       position: 'absolute',
       bottom: 10,
       alignSelf: 'center',
+      maxWidth: '92%',
+      textAlign: 'center',
       color: '#fffffc',
       fontSize: 12,
       backgroundColor: 'rgba(0,0,0,0.5)',

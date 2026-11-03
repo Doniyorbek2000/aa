@@ -69,7 +69,7 @@ function Action({ icon, label, onPress, p }: { icon: keyof typeof Ionicons.glyph
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={actionStyles.btn}>
       <Ionicons name={icon} size={24} color={p.ink} />
-      <Text style={[actionStyles.label, { color: p.body }]} numberOfLines={1}>
+      <Text style={[actionStyles.label, { color: p.body }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
         {label}
       </Text>
     </Pressable>

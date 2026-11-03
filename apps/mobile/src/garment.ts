@@ -25,6 +25,12 @@ export function garmentFromQuery(params: Record<string, unknown> | null | undefi
   return typeof raw === 'string' ? normaliseGarmentUrl(raw) : null;
 }
 
+/** The live preview draws garments on a canvas, so other sites' images go through the same-origin /api/garment proxy. */
+export function liveGarmentUrl(uri: string, apiBase: string): string {
+  if (uri.startsWith('data:') || uri.startsWith(`${apiBase}/`)) return uri;
+  return `${apiBase}/api/garment?url=${encodeURIComponent(uri)}`;
+}
+
 export function dataUrl(base64: string, mimeType = 'image/jpeg'): string {
   return `data:${mimeType};base64,${base64}`;
 }

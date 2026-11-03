@@ -1,8 +1,19 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { garmentFromQuery, normaliseGarmentUrl, splitDataUrl } from './garment.ts';
+import { garmentFromQuery, liveGarmentUrl, normaliseGarmentUrl, splitDataUrl } from './garment.ts';
 
 describe('garment helpers', () => {
+  it('proxies only third-party garment images for the live canvas', () => {
+    assert.equal(liveGarmentUrl('https://a12.uz/assets/g.png', 'https://a12.uz'), 'https://a12.uz/assets/g.png');
+    assert.equal(liveGarmentUrl('data:image/png;base64,AA', 'https://a12.uz'), 'data:image/png;base64,AA');
+    assert.equal(
+      liveGarmentUrl('https://cdn.shop.com/a b.jpg?x=1', 'https://a12.uz'),
+      'https://a12.uz/api/garment?url=https%3A%2F%2Fcdn.shop.com%2Fa%20b.jpg%3Fx%3D1'
+    );
+    // a lookalike host must not skip the proxy
+    assert.match(liveGarmentUrl('https://a12.uz.evil.com/g.png', 'https://a12.uz'), /^https:\/\/a12\.uz\/api\/garment\?url=/);
+  });
+
   it('accepts https image links and trims whitespace', () => {
     assert.equal(normaliseGarmentUrl('  https://cdn.shopify.com/a.jpg '), 'https://cdn.shopify.com/a.jpg');
   });
