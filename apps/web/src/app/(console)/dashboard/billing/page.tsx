@@ -15,9 +15,9 @@ export default async function BillingPage() {
   const user = await currentUser();
   if (!user) redirect('/login?next=/dashboard/billing');
   const db = getDb();
-  const [stores, plans, packs, settings] = await Promise.all([
+  // No subscriptions: shops buy prepaid seconds that never expire
+  const [stores, packs, settings] = await Promise.all([
     db.select({ id: schema.stores.id, name: schema.stores.name }).from(schema.stores).where(eq(schema.stores.ownerId, user.id)),
-    db.select().from(schema.plans).where(eq(schema.plans.isActive, true)).orderBy(schema.plans.priceUzs),
     db.select().from(schema.packs).where(eq(schema.packs.isActive, true)).orderBy(schema.packs.priceUzs),
     getSettings(db),
   ]);
@@ -37,18 +37,17 @@ export default async function BillingPage() {
       <main className="console-main" style={{ maxWidth: 860 }}>
         <div style={{ display: 'grid', gap: 6 }}>
           <Link href="/dashboard" className="console-link" style={{ justifySelf: 'start', padding: 0 }}>← Do‘konim</Link>
-          <h1>Tarif va to‘lov</h1>
-          <p className="muted">Tarif yoki qo‘shimcha soniyalar paketini tanlang, kartaga o‘tkazing va chekni yuboring. Tekshirilgach soniyalar avtomatik qo‘shiladi.</p>
+          <h1>Balansni to‘ldirish</h1>
+          <p className="muted">Obuna yo‘q: AI soniyalar paketini tanlang, kartaga o‘tkazing va chekni yuboring. Tekshirilgach soniyalar balansingizga qo‘shiladi va hech qachon yonmaydi.</p>
         </div>
         {stores.length === 0 ? (
           <p className="notice">To‘lov do‘kon ulangandan keyin ochiladi.</p>
-        ) : !hasCard || (plans.length === 0 && packs.length === 0) ? (
+        ) : !hasCard || packs.length === 0 ? (
           <p className="notice">To‘lov hozircha sozlanmagan. Iltimos, biz bilan bog‘laning.</p>
         ) : (
           <PayForm
             stores={stores}
             items={[
-              ...plans.map((plan) => ({ kind: 'plan' as const, id: plan.id, name: plan.name, seconds: plan.monthlySeconds, priceUzs: plan.priceUzs })),
               ...packs.map((pack) => ({ kind: 'pack' as const, id: pack.id, name: pack.name, seconds: pack.seconds, priceUzs: pack.priceUzs })),
             ]}
             card={{ number: formatCard(settings.cardNumber), holder: settings.cardHolder, bank: settings.bankName }}

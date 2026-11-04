@@ -5,12 +5,12 @@ import { savePaymentSettings } from './actions';
 
 const som = (value: number) => `${Math.round(value).toLocaleString('uz-UZ')} so‘m`;
 
-// Starting points for the plan list; the admin still names and prices each plan
+// Starting points for the prepaid packs (no subscriptions); the admin still names and prices each
 const TIERS = [
-  { name: 'Start', kind: 'Tarif', seconds: 1_800 },
-  { name: 'Biznes', kind: 'Tarif', seconds: 7_200 },
-  { name: 'Pro', kind: 'Tarif', seconds: 21_600 },
-  { name: '+600 s', kind: 'Paket', seconds: 600 },
+  { name: 'Sinov', kind: 'Paket', seconds: 600 },
+  { name: 'Start', kind: 'Paket', seconds: 1_800 },
+  { name: 'Biznes', kind: 'Paket', seconds: 7_200 },
+  { name: 'Pro', kind: 'Paket', seconds: 21_600 },
 ] as const;
 
 /** Decart's cost per second, A12's markup, and the sale prices that follow from them. */

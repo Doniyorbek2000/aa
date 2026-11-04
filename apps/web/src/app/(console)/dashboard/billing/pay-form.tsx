@@ -67,7 +67,7 @@ export function PayForm({ stores, items, card }: Props) {
             return (
               <label key={value} className="stat" style={{ position: 'relative', cursor: 'pointer', borderColor: isOn ? 'var(--c-accent)' : undefined, boxShadow: isOn ? '0 0 0 1px var(--c-accent)' : undefined }}>
                 <input type="radio" name="item" value={value} checked={isOn} onChange={() => setChoice(value)} style={{ position: 'absolute', opacity: 0 }} />
-                <span>{item.kind === 'plan' ? 'Oylik tarif' : 'Qo‘shimcha paket'}</span>
+                <span>{item.kind === 'plan' ? 'Oylik tarif' : 'Soniya paketi'}</span>
                 <b>{item.name}</b>
                 <span>{item.seconds.toLocaleString('uz-UZ')} AI soniya{item.kind === 'plan' ? ' / 30 kun' : ''}</span>
                 <b style={{ fontSize: 18, marginTop: 6 }}>{som(item.priceUzs)}</b>

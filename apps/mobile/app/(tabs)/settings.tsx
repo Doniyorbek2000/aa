@@ -133,7 +133,7 @@ export default function ProfileTab() {
         <Text style={styles.about}>{t.aboutBody}</Text>
         <LinkRow label={t.privacy} onPress={() => open('/legal#privacy')} styles={styles} p={p} />
         <LinkRow label={t.terms} onPress={() => open('/legal#terms')} styles={styles} p={p} />
-        <LinkRow label={t.website} onPress={() => open('/business')} styles={styles} p={p} />
+        <LinkRow label={t.website} onPress={() => open('/')} styles={styles} p={p} />
       </View>
 
       {profile && (

@@ -15,7 +15,7 @@ export async function PacksSettingsSection() {
   return (
     <>
       <section className="card">
-        <h2>Qo‘shimcha soniya paketlari</h2>
+        <h2>Soniya paketlari (oldindan to‘lov, muddatsiz)</h2>
         <form action={createPack} className="form-row" style={{ marginBottom: 16 }}>
           <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="+600 soniya" /></label>
           <label className="field"><span>AI soniya</span><input className="input" name="seconds" type="number" min={30} step={1} required placeholder="600" /></label>

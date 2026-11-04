@@ -37,7 +37,7 @@ export default async function DashboardPage() {
           <h1>Do‘konim</h1>
           {rows.length > 0 && (
             <div className="form-row">
-              <a className="btn" href="/dashboard/billing" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Tarif va to‘lov</a>
+              <a className="btn" href="/dashboard/billing" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Balansni to‘ldirish</a>
               <a className="btn btn-ghost" href="/dashboard/studio" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Fotostudiya</a>
               <a className="btn btn-ghost" href="/dashboard/live" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Jonli efir</a>
               <a className="btn btn-ghost" href="/dashboard/video" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Video reklama</a>
@@ -62,20 +62,28 @@ export default async function DashboardPage() {
               <div className="card" style={{ display: 'grid', gap: 10 }}>
                 <h2>{store.name}</h2>
                 {store.status !== 'active' && <p className="error">Do‘kon vaqtincha to‘xtatilgan — AI kiyintirish bepul rejimda ishlaydi.</p>}
-                {isExpired && (
+                <div className="stats">
+                  <div className="stat">
+                    <b>{store.extraSeconds.toLocaleString('uz-UZ')} s</b>
+                    <span>AI soniya balansi · muddatsiz</span>
+                  </div>
+                  {limit > 0 && !isExpired && (
+                    <div className="stat">
+                      <b>{Math.max(0, limit - store.usedSeconds).toLocaleString('uz-UZ')} s</b>
+                      <span>{plan?.name} · {endsAt} gacha</span>
+                    </div>
+                  )}
+                </div>
+                {limit > 0 && !isExpired && <div className="bar" role="progressbar" aria-valuenow={usedPct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${usedPct}%` }} /></div>}
+                {store.extraSeconds < 60 && !(limit > 0 && !isExpired) && (
                   <p className="error">
-                    Tarif muddati {endsAt} da tugagan. AI soniyalar to‘xtadi — davom ettirish uchun <a href="/dashboard/billing">tarifni to‘lang</a>.
+                    Balans tugagan — xaridorlar hozir bepul kuzatish rejimini ko‘radi. <a href="/dashboard/billing">Balansni to‘ldiring</a>.
                   </p>
                 )}
-                <p>
-                  Tarif: <b>{plan?.name ?? 'tanlanmagan'}</b>
-                  {limit > 0 && !isExpired && (
-                    <span className="muted"> · {store.usedSeconds.toLocaleString('uz-UZ')} / {limit.toLocaleString('uz-UZ')} AI soniya · {endsAt} gacha</span>
-                  )}
+                <p className="muted">
+                  Obuna yo‘q: soniyalarni oldindan sotib olasiz, ular yonmaydi va faqat AI ishlaganda kamayadi. Balans tugasa, bepul kuzatish
+                  rejimi ishlashda davom etadi.
                 </p>
-                {store.extraSeconds > 0 && <p>Qo‘shimcha paket: <b>{store.extraSeconds.toLocaleString('uz-UZ')} AI soniya</b> <span className="muted">(oy o‘tsa ham yonmaydi)</span></p>}
-                {limit > 0 && !isExpired && <div className="bar" role="progressbar" aria-valuenow={usedPct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${usedPct}%` }} /></div>}
-                <p className="muted">Soniyalar tugaganda mijozlaringiz uchun bepul kuzatish rejimi ishlashda davom etadi.</p>
               </div>
 
               <div className="card" style={{ display: 'grid', gap: 10 }}>

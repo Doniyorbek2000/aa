@@ -156,8 +156,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </div>
         </section>
 
-        <section className="card">
-          <h2>Tariflar</h2>
+        <PacksSettingsSection />
+        <details className="card">
+          <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Oylik tariflar (obuna · ixtiyoriy)</summary>
+          <p className="muted" style={{ margin: '10px 0 14px' }}>A12 obunasiz ishlaydi: do‘konlar soniya paketlarini oldindan sotib oladi. Oylik tarif faqat alohida kelishuv bo‘lsa kerak; sotuvdagi tarif bo‘lmasa, do‘konlar uni ko‘rmaydi.</p>
           <form action={createPlan} className="form-row" style={{ marginBottom: 16 }}>
             <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="Start" /></label>
             <label className="field"><span>AI soniya / 30 kun</span><input className="input" name="monthlySeconds" type="number" min={30} step={1} required placeholder="6000" /></label>
@@ -197,9 +199,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               </tbody>
             </table>
           </div>
-        </section>
-
-        <PacksSettingsSection />
+        </details>
         <CredentialsSection user={user} status={cred} />
       </main>
     </>
