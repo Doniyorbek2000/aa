@@ -18,6 +18,10 @@ import { useDecartLive } from './use-decart-live';
 export const CWS_URL = '/install';
 
 // A12's own sample garments, women's and men's; a top first, since the studio opens on "upper body"
+// The studio rail: the samples plus the shopper's own photos
+const MAX_THUMBS = 6;
+const UPLOAD_LABEL: Record<string, string> = { uz: '+ O‘z rasmingizni yuklang', ru: '+ Загрузить своё фото', en: '+ Upload your own photo' };
+
 export const DEFAULT_GARMENTS = [
   '/garments/adm-tshirt.jpg',
   '/garments/adm-dress.jpg',
@@ -185,7 +189,8 @@ export function LiveTryOnModal({
   /** Widget key of the shop that sent the visitor; its plan pays for the live AI minutes. */
   storeKey?: string | null | undefined;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const uploadLabel = UPLOAD_LABEL[locale] ?? UPLOAD_LABEL.en;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [connecting, setConnecting] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -767,14 +772,14 @@ export function LiveTryOnModal({
                   fontFamily: 'inherit',
                 }}
               >
-                + Upload garment photo
+                {uploadLabel}
               </button>
             </div>
           </div>
 
           <div className="t-s2">
             <div className="t-garments">
-              {garmentList.slice(0, 4).map((garmentUrl, idx) => (
+              {garmentList.slice(0, MAX_THUMBS).map((garmentUrl, idx) => (
                 <div
                   key={garmentUrl}
                   className={`g-thumb ${thumbsVisible[idx] !== false ? 'visible' : ''} ${

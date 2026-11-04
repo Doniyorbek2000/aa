@@ -353,7 +353,7 @@ body {
 }
 .t-garments {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   width: 232px;
   flex-shrink: 0;
@@ -562,7 +562,7 @@ body {
   }
   .t-garments {
     width: 100%;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     flex-shrink: 0;
     order: 2;
   }
