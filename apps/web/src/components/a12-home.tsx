@@ -6,9 +6,17 @@ import { LanguageSwitcher, useI18n } from '@/lib/i18n';
 import { homeCopy } from '@/lib/home-copy';
 import { BrandWordmark, CWS_URL, LiveTryOnModal, createCleanGarmentCanvas } from './live-tryon-modal';
 
-// Tops only: the mirror's silhouette is cut at the waist. The cut-out keys on the light studio
-// background, so white garments do not belong here
-const MIRROR_GARMENTS = ['/garments/adm-tshirt.jpg', '/garments/adm-bomber.jpg', '/garments/adm-hoodie.jpg'];
+// Women's and men's pieces; long ones are drawn narrower so they fit under the head. The cut-out
+// keys on the light studio background, so white garments do not belong here
+// The bow dress is left out: its cream bib touches the background at the neckline, so the
+// cut-out eats it. It is still in the live studio, where the AI renders it whole
+const MIRROR_ITEMS = [
+  { src: '/garments/adm-set.jpg', width: '42%' },
+  { src: '/garments/adm-tshirt.jpg', width: '70%' },
+  { src: '/garments/adm-hoodie.jpg', width: '66%' },
+  { src: '/garments/adm-bomber.jpg', width: '70%' },
+];
+const MIRROR_GARMENTS = MIRROR_ITEMS.map((item) => item.src);
 const CYCLE_MS = 3200;
 
 /** Garment photos with their studio background cut away, so they sit on the mirror's silhouette. */
@@ -179,7 +187,9 @@ export function A12Home() {
                   </g>
                 </svg>
                 {cutouts.map((src, i) =>
-                  src ? <img key={i} className={`h-worn ${i === active ? 'on' : ''}`} src={src} alt="" /> : null
+                  src ? (
+                    <img key={i} className={`h-worn ${i === active ? 'on' : ''}`} src={src} alt="" style={{ width: MIRROR_ITEMS[i]?.width }} />
+                  ) : null
                 )}
                 <span className="h-scan" />
                 <span className="h-caption">{c.mirrorCaption}</span>

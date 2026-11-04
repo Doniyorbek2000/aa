@@ -595,10 +595,13 @@
     width: min(100%, 320px);
     border-radius: 26px;
   }
+  .h-rail {
+    gap: 8px;
+  }
   .h-rail-item {
-    width: 58px;
-    height: 72px;
-    border-radius: 13px;
+    width: 50px;
+    height: 62px;
+    border-radius: 12px;
   }
   .h-card {
     min-height: 0;

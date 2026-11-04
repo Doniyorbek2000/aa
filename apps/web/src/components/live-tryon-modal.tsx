@@ -17,13 +17,13 @@ import { useDecartLive } from './use-decart-live';
 
 export const CWS_URL = '/install';
 
-// A12's own sample garments: tops first, since the studio opens on "upper body"
+// A12's own sample garments, women's and men's; a top first, since the studio opens on "upper body"
 export const DEFAULT_GARMENTS = [
   '/garments/adm-tshirt.jpg',
-  '/garments/adm-bomber.jpg',
-  '/garments/adm-hoodie.jpg',
   '/garments/adm-dress.jpg',
+  '/garments/adm-hoodie.jpg',
   '/garments/adm-set.jpg',
+  '/garments/adm-bomber.jpg',
 ];
 
 function readFileAsDataUrl(file: File): Promise<string> {

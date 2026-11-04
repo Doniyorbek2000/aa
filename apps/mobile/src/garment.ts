@@ -5,8 +5,10 @@ export const GARMENT_TYPES: readonly GarmentType[] = ['upper_body', 'lower_body'
 /** Demo garments served by the web app, the same three shown on a12.uz/business */
 export const DEMO_GARMENT_PATHS = [
   '/garments/adm-tshirt.jpg',
-  '/garments/adm-bomber.jpg',
   '/garments/adm-hoodie.jpg',
+  '/garments/adm-dress.jpg',
+  '/garments/adm-set.jpg',
+  '/garments/adm-bomber.jpg',
 ] as const;
 
 const MAX_URL_LENGTH = 2048;
