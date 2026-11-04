@@ -18,10 +18,11 @@ export async function PaymentsSection() {
     adminNote: schema.payments.adminNote,
     createdAt: schema.payments.createdAt,
     store: schema.stores.name,
+    payerPhone: schema.users.phone,
   };
   const [pending, recent] = await Promise.all([
-    db.select(columns).from(schema.payments).innerJoin(schema.stores, eq(schema.stores.id, schema.payments.storeId)).where(eq(schema.payments.status, 'pending')).orderBy(schema.payments.createdAt),
-    db.select(columns).from(schema.payments).innerJoin(schema.stores, eq(schema.stores.id, schema.payments.storeId)).where(ne(schema.payments.status, 'pending')).orderBy(desc(schema.payments.reviewedAt)).limit(RECENT),
+    db.select(columns).from(schema.payments).leftJoin(schema.stores, eq(schema.stores.id, schema.payments.storeId)).innerJoin(schema.users, eq(schema.users.id, schema.payments.userId)).where(eq(schema.payments.status, 'pending')).orderBy(schema.payments.createdAt),
+    db.select(columns).from(schema.payments).leftJoin(schema.stores, eq(schema.stores.id, schema.payments.storeId)).innerJoin(schema.users, eq(schema.users.id, schema.payments.userId)).where(ne(schema.payments.status, 'pending')).orderBy(desc(schema.payments.reviewedAt)).limit(RECENT),
   ]);
 
   return (
@@ -32,11 +33,14 @@ export async function PaymentsSection() {
       ) : (
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Do‘kon</th><th>Nima uchun</th><th>Summa</th><th>Chek</th><th /></tr></thead>
+            <thead><tr><th>Kim</th><th>Nima uchun</th><th>Summa</th><th>Chek</th><th /></tr></thead>
             <tbody>
               {pending.map((payment) => (
                 <tr key={payment.id}>
-                  <td>{payment.store}<div className="muted" style={{ fontSize: 13 }}>{payment.createdAt.toLocaleString('uz-UZ')}</div></td>
+                  <td>
+                    {payment.store ?? `Foydalanuvchi · ${payment.payerPhone ?? '—'}`}
+                    <div className="muted" style={{ fontSize: 13 }}>{payment.createdAt.toLocaleString('uz-UZ')}</div>
+                  </td>
                   <td>{payment.title}<div className="muted" style={{ fontSize: 13 }}>{payment.kind === 'plan' ? 'oylik tarif' : 'paket'} · {payment.seconds.toLocaleString('uz-UZ')} s</div></td>
                   <td><b>{som(payment.amountUzs)}</b></td>
                   <td><a className="console-link" href={`/api/payments/${payment.id}/receipt`} target="_blank" rel="noopener noreferrer">Ko‘rish</a></td>
@@ -67,7 +71,7 @@ export async function PaymentsSection() {
               <tbody>
                 {recent.map((payment) => (
                   <tr key={payment.id}>
-                    <td>{payment.store}</td>
+                    <td>{payment.store ?? `Foydalanuvchi · ${payment.payerPhone ?? '—'}`}</td>
                     <td>{payment.title}</td>
                     <td>{som(payment.amountUzs)}</td>
                     <td><span className={payment.status === 'approved' ? 'badge badge-ok' : 'badge badge-off'}>{payment.status === 'approved' ? 'tasdiqlandi' : 'rad etildi'}</span> {payment.adminNote}</td>

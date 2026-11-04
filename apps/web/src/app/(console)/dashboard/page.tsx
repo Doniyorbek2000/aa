@@ -47,7 +47,8 @@ export default async function DashboardPage() {
         {rows.length === 0 && (
           <p className="notice">
             Sizning raqamingizga hali do‘kon ulanmagan. Do‘koningizni A12 ga ulash uchun biz bilan bog‘laning — ulangandan keyin shu
-            sahifada vidjet kodi va kiyimlar katalogi paydo bo‘ladi.
+            sahifada vidjet kodi va kiyimlar katalogi paydo bo‘ladi. O‘zingiz uchun jonli AI soniyalari kerak bo‘lsa —{' '}
+            <a href="/balance">Balansim</a>.
           </p>
         )}
         {rows.map(({ store, plan }) => {

@@ -84,7 +84,9 @@ export async function createPack(form: FormData) {
   const isPriceEmpty = String(form.get('priceUzs') ?? '').trim() === '';
   const priceUzs = isPriceEmpty ? await suggestedFor(db, seconds) : int(form, 'priceUzs', 0, 1_000_000_000);
   if (priceUzs === null) return;
-  await db.insert(schema.packs).values({ name, seconds, priceUzs });
+  // Shops buy for their widget balance, people for their own account (web now, in-app later)
+  const audience = oneOf(form, 'audience', ['store', 'user'] as const) ?? 'store';
+  await db.insert(schema.packs).values({ name, seconds, priceUzs, audience });
   done();
 }
 

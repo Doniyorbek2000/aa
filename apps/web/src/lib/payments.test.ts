@@ -70,6 +70,15 @@ describe('payments', () => {
     assert.equal((await storeNow())?.extraSeconds, 10 + 600);
   });
 
+  it('a top-up without a store lands on the payer account balance', async () => {
+    const { db, pay, storeNow } = await setup();
+    const payment = await pay({ storeId: null, kind: 'pack', seconds: 600 });
+    assert.equal(await approvePayment(db, payment.id, t1), true);
+    const [owner] = await db.select().from(schema.users).where(eq(schema.users.id, payment.userId));
+    assert.equal(owner?.secondsBalance, 600);
+    assert.equal((await storeNow())?.extraSeconds, 10);
+  });
+
   it('a rejected payment grants nothing and cannot be approved later', async () => {
     const { db, pay, storeNow } = await setup();
     const payment = await pay({ kind: 'pack', seconds: 600 });

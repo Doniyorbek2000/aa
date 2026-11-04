@@ -58,7 +58,13 @@ export async function approvePayment(db: AuthDb, paymentId: string, now: Date): 
       .where(and(eq(schema.payments.id, paymentId), eq(schema.payments.status, 'pending')))
       .returning();
     if (!payment) return false;
-    if (payment.kind === 'plan') {
+    if (!payment.storeId) {
+      // A person topping up their own account: the seconds follow them to the app and the web
+      await tx
+        .update(schema.users)
+        .set({ secondsBalance: sql`${schema.users.secondsBalance} + ${payment.seconds}` })
+        .where(eq(schema.users.id, payment.userId));
+    } else if (payment.kind === 'plan') {
       await tx
         .update(schema.stores)
         // A store the admin paused stays paused: paying does not override that decision

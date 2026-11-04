@@ -96,6 +96,13 @@ export default function ProfileTab() {
               <View style={styles.bar} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(leftShare * 100) }}>
                 <View style={[styles.barFill, { width: `${Math.round(leftShare * 100)}%` }]} />
               </View>
+              {/* Bought seconds (from any device) are spent after today's free ones and never expire */}
+              <View style={[styles.allowanceHead, { marginTop: 4 }]}>
+                <Text style={styles.rowText}>{t.boughtSeconds}</Text>
+                <Text style={[styles.rowText, styles.balanceValue]}>
+                  {(live.balanceSeconds ?? 0).toLocaleString()} {t.secondsShort}
+                </Text>
+              </View>
             </View>
           )}
           <Pressable onPress={() => void signOut()} accessibilityRole="button" style={[styles.row, styles.rowBorder]}>
@@ -188,6 +195,7 @@ const makeStyles = (p: Palette) =>
     disabled: { opacity: 0.4 },
     allowance: { paddingVertical: 12, gap: 8 },
     allowanceHead: { flexDirection: 'row', justifyContent: 'space-between' },
+    balanceValue: { fontWeight: '700', color: p.accent },
     bar: { height: 8, borderRadius: 4, backgroundColor: p.line, overflow: 'hidden' },
     barFill: { height: 8, borderRadius: 4, backgroundColor: p.accent },
     signedOut: { paddingVertical: 16, gap: 12 },

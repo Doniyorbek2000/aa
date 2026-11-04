@@ -36,6 +36,13 @@
       "when": 1793787081778,
       "tag": "0004_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793790358455,
+      "tag": "0005_user_balance",
+      "breakpoints": true
     }
   ]
 }

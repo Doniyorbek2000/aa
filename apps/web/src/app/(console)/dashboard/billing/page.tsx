@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDb, schema } from '@/db';
@@ -18,7 +18,7 @@ export default async function BillingPage() {
   // No subscriptions: shops buy prepaid seconds that never expire
   const [stores, packs, settings] = await Promise.all([
     db.select({ id: schema.stores.id, name: schema.stores.name }).from(schema.stores).where(eq(schema.stores.ownerId, user.id)),
-    db.select().from(schema.packs).where(eq(schema.packs.isActive, true)).orderBy(schema.packs.priceUzs),
+    db.select().from(schema.packs).where(and(eq(schema.packs.isActive, true), eq(schema.packs.audience, 'store'))).orderBy(schema.packs.priceUzs),
     getSettings(db),
   ]);
   const history = stores.length

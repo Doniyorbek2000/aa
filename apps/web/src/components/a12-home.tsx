@@ -117,6 +117,7 @@ export function A12Home() {
             <Link href="/business">{c.navStores}</Link>
             <Link href="/mobile">{c.navApp}</Link>
             <Link href="/virtual-try-on">{c.navVto}</Link>
+            <Link href="/balance">{c.navBalance}</Link>
           </nav>
           <div className="h-top-actions">
             <LanguageSwitcher />

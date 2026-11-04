@@ -8,7 +8,7 @@ const DAY_MS = 24 * 60 * 60_000;
 const NO_STORE = { 'Cache-Control': 'no-store' };
 const signedOut = () => Response.json({ user: null }, { status: 401, headers: NO_STORE });
 
-/** The signed-in profile, with how much free live AI time is left in the last 24 hours. */
+/** The signed-in profile, with today's free live AI time left and the seconds the person bought. */
 export async function GET(request: Request) {
   const user = await userFromRequest(request);
   if (!user) return signedOut();
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const daily = freeAppSeconds(process.env.FREE_APP_SECONDS_PER_DAY);
   const { id, role, phone, email, name } = user;
   return Response.json(
-    { user: { id, role, phone, email, name }, live: { dailySeconds: daily, secondsLeft: Math.max(0, daily - used) } },
+    { user: { id, role, phone, email, name }, live: { dailySeconds: daily, secondsLeft: Math.max(0, daily - used), balanceSeconds: user.secondsBalance } },
     { headers: NO_STORE }
   );
 }

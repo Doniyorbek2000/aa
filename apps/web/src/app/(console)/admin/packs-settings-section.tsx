@@ -18,6 +18,13 @@ export async function PacksSettingsSection() {
       <section className="card">
         <h2>Soniya paketlari (oldindan to‘lov, muddatsiz)</h2>
         <form action={createPack} className="form-row" style={{ marginBottom: 16 }}>
+          <label className="field">
+            <span>Kimga</span>
+            <select className="select" name="audience" defaultValue="store">
+              <option value="store">Do‘konlar (vidjet balansi)</option>
+              <option value="user">Foydalanuvchilar (o‘z akkaunti)</option>
+            </select>
+          </label>
           <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="+600 soniya" /></label>
           <label className="field"><span>AI soniya</span><input className="input" name="seconds" type="number" min={30} step={1} required placeholder="600" /></label>
           <label className="field"><span>Narxi (so‘m)</span><input className="input" name="priceUzs" type="number" min={0} placeholder="bo‘sh = tavsiya narx" /></label>
@@ -25,15 +32,16 @@ export async function PacksSettingsSection() {
         </form>
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Paket</th><th>Soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda</th><th>Tavsiya (×{markup})</th><th>Holat</th><th /></tr></thead>
+            <thead><tr><th>Paket</th><th>Kimga</th><th>Soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda</th><th>Tavsiya (×{markup})</th><th>Holat</th><th /></tr></thead>
             <tbody>
-              {packs.length === 0 && <tr><td colSpan={8} className="muted">Hali paket yo‘q.</td></tr>}
+              {packs.length === 0 && <tr><td colSpan={9} className="muted">Hali paket yo‘q.</td></tr>}
               {packs.map((pack) => {
                 const cost = costUzs(pack.seconds, rate, prices);
                 const margin = marginPercent(pack.priceUzs, cost);
                 return (
                   <tr key={pack.id}>
                     <td>{pack.name}</td>
+                    <td><span className="badge">{pack.audience === 'user' ? 'foydalanuvchi' : 'do‘kon'}</span></td>
                     <td>{pack.seconds.toLocaleString('uz-UZ')}</td>
                     <td>{som(pack.priceUzs)}</td>
                     <td>{som(cost)}</td>

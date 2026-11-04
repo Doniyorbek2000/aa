@@ -31,6 +31,7 @@ export async function ConsoleHeader({ user }: { user: User }) {
             )}
           </Link>
         )}
+        <Link href="/balance">Balansim</Link>
         <Link href="/dashboard">Do‘konim</Link>
         <span className="muted">{who}</span>
         <LogoutButton />

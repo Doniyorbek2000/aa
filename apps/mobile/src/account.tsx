@@ -6,7 +6,8 @@ import { API_BASE } from './api';
 const TOKEN_KEY = 'a12.session';
 
 export type Profile = { id: string; role: 'user' | 'admin'; phone: string | null; email: string | null; name: string | null };
-export type LiveAllowance = { dailySeconds: number; secondsLeft: number };
+/** Free seconds left today, and bought seconds that never expire (web or in-app top-ups). */
+export type LiveAllowance = { dailySeconds: number; secondsLeft: number; balanceSeconds?: number };
 
 /** Calls the A12 API as the mobile app, signed in when a token is given. */
 export function apiFetch(path: string, token: string | null, init: RequestInit = {}): Promise<Response> {

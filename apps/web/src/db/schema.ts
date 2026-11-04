@@ -14,6 +14,8 @@ export const users = pgTable('users', {
   googleSub: text('google_sub').unique(),
   name: text('name'),
   role: userRole('role').notNull().default('user'),
+  /** Live AI seconds the person bought (web or in-app); spent after the free daily allowance, never expire. */
+  secondsBalance: integer('seconds_balance').notNull().default(0),
   createdAt: createdAt(),
 });
 
@@ -83,9 +85,12 @@ export const stores = pgTable('stores', {
   createdAt: createdAt(),
 });
 
-/** One-off top-ups of live AI seconds a shop can buy on top of its plan. */
+export const packAudience = pgEnum('pack_audience', ['store', 'user']);
+
+/** Prepaid live AI seconds: for shops (their widget balance) or for people (their own account). */
 export const packs = pgTable('packs', {
   id: uuid('id').primaryKey().defaultRandom(),
+  audience: packAudience('audience').notNull().default('store'),
   name: text('name').notNull(),
   seconds: integer('seconds').notNull(),
   priceUzs: integer('price_uzs').notNull(),
@@ -97,16 +102,14 @@ export const paymentKind = pgEnum('payment_kind', ['plan', 'pack']);
 export const paymentStatus = pgEnum('payment_status', ['pending', 'approved', 'rejected']);
 
 /**
- * A shop's card transfer for a plan or a pack, with the receipt it uploaded. An admin checks
- * the transfer and approves it, which grants the seconds.
+ * A card transfer for a plan or a pack, with the receipt: from a shop (storeId set) or from a
+ * person topping up their own account (storeId null). An admin approves it, which grants the seconds.
  */
 export const payments = pgTable(
   'payments',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    storeId: uuid('store_id')
-      .notNull()
-      .references(() => stores.id, { onDelete: 'cascade' }),
+    storeId: uuid('store_id').references(() => stores.id, { onDelete: 'cascade' }),
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),

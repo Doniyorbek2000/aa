@@ -10,6 +10,7 @@ export interface HomeCopy {
   navStores: string;
   navApp: string;
   navVto: string;
+  navBalance: string;
   liveBadge: string;
   mirrorCaption: string;
   stepsTitle: string;
@@ -34,6 +35,7 @@ const HOME_COPY: Partial<Record<LocaleCode, HomeCopy>> = {
     navStores: 'Do‘konlar uchun',
     navApp: 'Mobil ilova',
     navVto: 'Virtual kiyib ko‘rish',
+    navBalance: 'Soniya sotib olish',
     liveBadge: 'Jonli',
     mirrorCaption: 'Kiyim gavdangizni kuzatadi',
     stepsTitle: 'Uch qadam — va kiyim sizda',
@@ -59,6 +61,7 @@ const HOME_COPY: Partial<Record<LocaleCode, HomeCopy>> = {
     navStores: 'Для магазинов',
     navApp: 'Приложение',
     navVto: 'Виртуальная примерка',
+    navBalance: 'Купить секунды',
     liveBadge: 'Live',
     mirrorCaption: 'Вещь следует за вашим телом',
     stepsTitle: 'Три шага — и вещь на вас',
@@ -84,6 +87,7 @@ const HOME_COPY: Partial<Record<LocaleCode, HomeCopy>> = {
     navStores: 'For stores',
     navApp: 'Mobile app',
     navVto: 'Virtual try-on',
+    navBalance: 'Buy seconds',
     liveBadge: 'Live',
     mirrorCaption: 'The garment tracks your body',
     stepsTitle: 'Three steps to the fit',

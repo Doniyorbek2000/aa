@@ -3,7 +3,7 @@
  * front (the session cap). The write only lands if usedSeconds is unchanged since it was read,
  * so concurrent visitors cannot overspend a plan.
  */
-import { and, eq, gte, sum } from 'drizzle-orm';
+import { and, eq, gte, sql, sum } from 'drizzle-orm';
 import type { AuthDb } from './auth/store.ts';
 import * as schema from '../db/schema.ts';
 
@@ -89,6 +89,35 @@ export async function refundStoreSeconds(db: AuthDb, storeId: string, seconds: n
       .returning({ id: schema.stores.id });
     if (saved) return;
   }
+}
+
+/**
+ * Takes up to wantSeconds from a person's bought balance and returns how many it took. The write
+ * only lands if the balance is unchanged since it was read, so two devices cannot overspend it.
+ */
+export async function takeUserSeconds(db: AuthDb, userId: string, wantSeconds: number): Promise<number> {
+  if (wantSeconds <= 0) return 0;
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    const [user] = await db.select({ balance: schema.users.secondsBalance }).from(schema.users).where(eq(schema.users.id, userId));
+    if (!user || user.balance <= 0) return 0;
+    const take = Math.min(wantSeconds, user.balance);
+    const [saved] = await db
+      .update(schema.users)
+      .set({ secondsBalance: user.balance - take })
+      .where(and(eq(schema.users.id, userId), eq(schema.users.secondsBalance, user.balance)))
+      .returning({ id: schema.users.id });
+    if (saved) return take;
+  }
+  return 0;
+}
+
+/** Gives back bought seconds reserved for a session that never started. */
+export async function refundUserSeconds(db: AuthDb, userId: string, seconds: number): Promise<void> {
+  if (seconds <= 0) return;
+  await db
+    .update(schema.users)
+    .set({ secondsBalance: sql`${schema.users.secondsBalance} + ${seconds}` })
+    .where(eq(schema.users.id, userId));
 }
 
 // One full live session a day for each signed-in app user, unless FREE_APP_SECONDS_PER_DAY says otherwise

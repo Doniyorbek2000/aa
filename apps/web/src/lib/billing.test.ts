@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
 import * as schema from '../db/schema.ts';
-import { BILLING_PERIOD_MS, chargeStoreSession, refundStoreSeconds } from './billing.ts';
+import { BILLING_PERIOD_MS, chargeStoreSession, refundStoreSeconds, refundUserSeconds, takeUserSeconds } from './billing.ts';
 
 const open: PGlite[] = [];
 after(async () => {
@@ -92,5 +92,19 @@ describe('chargeStoreSession', () => {
     await chargeStoreSession(db, 'wk_0123456789abcdef', 180, t0);
     await refundStoreSeconds(db, store.id, 180);
     assert.equal(await used(), 0);
+  });
+});
+
+describe('bought seconds on a person account', () => {
+  it('takes what is there, never more, and gives refunds back', async () => {
+    const { db } = await setup();
+    const [person] = await db.insert(schema.users).values({ phone: '+998901112233', secondsBalance: 100 }).returning();
+    assert.ok(person);
+    assert.equal(await takeUserSeconds(db, person.id, 60), 60);
+    assert.equal(await takeUserSeconds(db, person.id, 60), 40);
+    assert.equal(await takeUserSeconds(db, person.id, 60), 0);
+    await refundUserSeconds(db, person.id, 25);
+    const [after] = await db.select().from(schema.users).where(eq(schema.users.id, person.id));
+    assert.equal(after?.secondsBalance, 25);
   });
 });

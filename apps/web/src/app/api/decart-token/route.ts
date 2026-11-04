@@ -8,6 +8,8 @@ import {
   freeAppSeconds,
   recordLiveSession,
   refundStoreSeconds,
+  refundUserSeconds,
+  takeUserSeconds,
 } from '@/lib/billing';
 import { decartAllowedOrigins, decartTokenOptions, isAllowedOrigin, maxSessionSeconds, maxSessionsPerDay } from '@/lib/decart';
 import { clientIp, createRateLimiter } from '@/lib/rate-limit';
@@ -51,30 +53,48 @@ export async function POST(request: Request) {
 
   let seconds = maxSessionSeconds(process.env.DECART_MAX_SESSION_SECONDS);
   let storeId: string | null = null;
+  // Seconds of this session that come from the free daily allowance and from the person's bought balance
+  let freeSeconds = 0;
+  let paidSeconds = 0;
   const user = hasDb ? await userFromRequest(request).catch(() => null) : null;
+  const giveBack = () => (user && paidSeconds > 0 ? refundUserSeconds(getDb(), user.id, paidSeconds).catch(() => {}) : Promise.resolve());
+
   if (source === 'app' && !storeKey) {
-    // The mobile app is free to download, so its live AI needs an account and a daily allowance
+    // The app is free to download: its live AI needs an account, spends today's free seconds first, then bought ones
     if (!user) return Response.json({ error: 'Sign in to use live AI.', reason: 'sign-in' }, { status: 401 });
-    const left = freeAppSeconds(process.env.FREE_APP_SECONDS_PER_DAY) - (await appSecondsUsedSince(getDb(), user.id, new Date(now.getTime() - DAY_MS)));
-    if (left < MIN_SESSION_SECONDS) {
+    const used = await appSecondsUsedSince(getDb(), user.id, new Date(now.getTime() - DAY_MS));
+    freeSeconds = Math.min(seconds, Math.max(0, freeAppSeconds(process.env.FREE_APP_SECONDS_PER_DAY) - used));
+    paidSeconds = await takeUserSeconds(getDb(), user.id, seconds - freeSeconds);
+    if (freeSeconds + paidSeconds < MIN_SESSION_SECONDS) {
+      await giveBack();
       return Response.json({ error: 'Today’s free live AI time is used up.', reason: 'daily-limit' }, { status: 402 });
     }
-    seconds = Math.min(seconds, left);
+    seconds = freeSeconds + paidSeconds;
+  } else if (source === 'web' && !storeKey && user && user.secondsBalance > 0) {
+    // Signed in on the web with bought seconds: those pay, and the free-taste limits do not apply
+    paidSeconds = await takeUserSeconds(getDb(), user.id, seconds);
+    if (paidSeconds < MIN_SESSION_SECONDS) {
+      await giveBack();
+      paidSeconds = 0;
+    } else {
+      seconds = paidSeconds;
+    }
   }
+
   if (storeKey && hasDb) {
     const charge = await chargeStoreSession(getDb(), storeKey, seconds, now);
     if (!charge.ok) {
-      return Response.json({ error: 'This shop has no live AI minutes left.', reason: charge.reason }, { status: 402 });
+      return Response.json({ error: 'This shop has no live AI seconds left.', reason: charge.reason }, { status: 402 });
     }
     ({ seconds, storeId } = charge);
-  } else if (!storeKey) {
+  } else if (!storeKey && paidSeconds === 0) {
     if (!allowFreeClientToday(clientIp(request), now.getTime())) {
       return Response.json({ error: 'Today’s free live AI tries are used up.', reason: 'daily-limit' }, { status: 429 });
     }
     if (!allowToday('site', now.getTime())) {
       return Response.json({ error: 'Too many live sessions, try again later.' }, { status: 429 });
     }
-  } else if (!allowToday('site', now.getTime())) {
+  } else if (storeKey && !allowToday('site', now.getTime())) {
     // A shop key without a database cannot be billed, so it shares the site budget
     return Response.json({ error: 'Too many live sessions, try again later.' }, { status: 429 });
   }
@@ -82,9 +102,19 @@ export async function POST(request: Request) {
   try {
     const token = await createDecartClient({ apiKey }).tokens.create(decartTokenOptions(origins, seconds));
     if (hasDb) {
-      await recordLiveSession(getDb(), { storeId, userId: user?.id ?? null, source, seconds }).catch((error: unknown) =>
-        console.error('Live session not recorded', error instanceof Error ? error.message : 'unknown error')
-      );
+      // Free and bought seconds are logged apart, so bought ones never eat into tomorrow's free allowance
+      const userId = user?.id ?? null;
+      const sessions = paidSeconds > 0
+        ? [
+            ...(freeSeconds > 0 ? [{ storeId, userId, source, seconds: freeSeconds }] : []),
+            { storeId, userId, source: `${source}-paid`, seconds: paidSeconds },
+          ]
+        : [{ storeId, userId, source, seconds }];
+      for (const session of sessions) {
+        await recordLiveSession(getDb(), session).catch((error: unknown) =>
+          console.error('Live session not recorded', error instanceof Error ? error.message : 'unknown error')
+        );
+      }
     }
     return Response.json(
       { apiKey: token.apiKey, expiresAt: token.expiresAt, seconds },
@@ -92,6 +122,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     if (storeId) await refundStoreSeconds(getDb(), storeId, seconds).catch(() => {});
+    await giveBack();
     console.error('Decart token request failed', error instanceof Error ? error.message : 'unknown error');
     return Response.json({ error: 'Live AI try-on is unavailable right now.' }, { status: 502 });
   }
