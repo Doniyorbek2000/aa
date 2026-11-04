@@ -3,9 +3,8 @@ import { getDb, schema } from '@/db';
 import { maxSessionSeconds } from '@/lib/decart';
 import { decartCredits, USD_PER_CREDIT } from '@/lib/decart-account';
 import { getSettings, usdRate } from '@/lib/payments';
+import { USD_PER_PLAN_SECOND } from '@/lib/pricing';
 
-// Decart realtime / per-image price; video plan seconds already count double
-const USD_PER_PLAN_SECOND = 0.02;
 const MONTH_MS = 30 * 24 * 60 * 60_000;
 
 const som = (value: number) => `${Math.round(value).toLocaleString('uz-UZ')} so‘m`;

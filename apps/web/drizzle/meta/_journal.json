@@ -29,6 +29,13 @@
       "when": 1793782490937,
       "tag": "0003_seconds",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793787081778,
+      "tag": "0004_credentials",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,8 @@
 import { getDb, schema } from '@/db';
 import { formatCard, getSettings, usdRate } from '@/lib/payments';
+import { costUzs, marginPercent, markupOf, suggestedPriceUzs } from '@/lib/pricing';
 import { createPack, savePaymentSettings, togglePack } from './actions';
 
-const USD_PER_SECOND = 0.02;
 const som = (value: number) => `${Math.round(value).toLocaleString('uz-UZ')} so‘m`;
 
 /** Top-up packs with their Decart cost and margin, and the card shops pay to. */
@@ -10,6 +10,7 @@ export async function PacksSettingsSection() {
   const db = getDb();
   const [packs, settings] = await Promise.all([db.select().from(schema.packs).orderBy(schema.packs.seconds), getSettings(db)]);
   const rate = usdRate(settings);
+  const markup = markupOf(settings.markup);
 
   return (
     <>
@@ -23,19 +24,20 @@ export async function PacksSettingsSection() {
         </form>
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Paket</th><th>Soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda</th><th>Holat</th><th /></tr></thead>
+            <thead><tr><th>Paket</th><th>Soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda</th><th>Tavsiya (×{markup})</th><th>Holat</th><th /></tr></thead>
             <tbody>
-              {packs.length === 0 && <tr><td colSpan={7} className="muted">Hali paket yo‘q.</td></tr>}
+              {packs.length === 0 && <tr><td colSpan={8} className="muted">Hali paket yo‘q.</td></tr>}
               {packs.map((pack) => {
-                const cost = pack.seconds * USD_PER_SECOND * rate;
-                const margin = pack.priceUzs ? Math.round(((pack.priceUzs - cost) / pack.priceUzs) * 100) : 0;
+                const cost = costUzs(pack.seconds, rate);
+                const margin = marginPercent(pack.priceUzs, cost);
                 return (
                   <tr key={pack.id}>
                     <td>{pack.name}</td>
                     <td>{pack.seconds.toLocaleString('uz-UZ')}</td>
                     <td>{som(pack.priceUzs)}</td>
-                    <td>{som(cost)} (${(pack.seconds * USD_PER_SECOND).toFixed(2)})</td>
+                    <td>{som(cost)}</td>
                     <td style={{ color: margin >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>{som(pack.priceUzs - cost)} · {margin}%</td>
+                    <td className="muted">{som(suggestedPriceUzs(pack.seconds, rate, markup))}</td>
                     <td><span className={pack.isActive ? 'badge badge-ok' : 'badge badge-off'}>{pack.isActive ? 'sotuvda' : 'yopiq'}</span></td>
                     <td>
                       <form action={togglePack}>

@@ -7,6 +7,7 @@ import { getDb, schema } from '@/db';
 import { normaliseUzPhone } from '@/lib/auth/phone';
 import { currentUser } from '@/lib/auth/session';
 import { envList, userForPhone } from '@/lib/auth/store';
+import { credentialProblem, normaliseLogin, setCredentials } from '@/lib/auth/password';
 import { randomToken } from '@/lib/auth/tokens';
 import { approvePayment, rejectPayment, saveSettings } from '@/lib/payments';
 import { int, oneOf, text, uuid } from '../validate';
@@ -92,11 +93,14 @@ export async function savePaymentSettings(form: FormData) {
   await requireAdmin();
   const cardNumber = (text(form, 'cardNumber', 40) ?? '').replace(/\D/g, '');
   const rate = int(form, 'usdRate', 1, 1_000_000);
+  const markup = Number((text(form, 'markup', 6) ?? '').replace(',', '.'));
+  // Forms post only their own fields; a missing field leaves the saved value alone
   await saveSettings(getDb(), {
     ...(cardNumber.length >= 12 && cardNumber.length <= 19 ? { cardNumber } : {}),
     ...(text(form, 'cardHolder', 60) ? { cardHolder: text(form, 'cardHolder', 60) ?? '' } : {}),
-    bankName: text(form, 'bankName', 60) ?? '',
+    ...(form.has('bankName') ? { bankName: text(form, 'bankName', 60) ?? '' } : {}),
     ...(rate ? { usdRate: String(rate) } : {}),
+    ...(Number.isFinite(markup) && markup >= 1 && markup <= 20 ? { markup: String(markup) } : {}),
   });
   done();
 }
@@ -122,4 +126,24 @@ export async function resetStoreUsage(form: FormData) {
   if (!id) return;
   await getDb().update(schema.stores).set({ usedSeconds: 0, periodStart: new Date() }).where(eq(schema.stores.id, id));
   done();
+}
+
+/**
+ * Sets or changes the signed-in admin's login and password. Outcomes come back as a short code in
+ * the URL (never free text), so a crafted link cannot put words into the admin panel.
+ */
+export async function saveAdminCredentials(form: FormData) {
+  const user = await requireAdmin();
+  const field = (key: string) => {
+    const value = form.get(key);
+    return typeof value === 'string' ? value : '';
+  };
+  const login = normaliseLogin(field('login'));
+  const password = field('password');
+  const back = (code: string) => redirect(`/admin?cred=${code}#kirish`);
+  if (password !== field('confirm')) back('mismatch');
+  const problem = credentialProblem(login, password);
+  if (problem) back(problem);
+  const result = await setCredentials(getDb(), user.id, login, password, field('current'), new Date());
+  back(result);
 }

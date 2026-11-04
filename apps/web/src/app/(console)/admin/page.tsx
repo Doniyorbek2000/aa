@@ -4,16 +4,17 @@ import { getDb, schema } from '@/db';
 import { currentUser } from '@/lib/auth/session';
 import { isPlanExpired, planEndsAt } from '@/lib/billing';
 import { getSettings, usdRate } from '@/lib/payments';
+import { costUzs, marginPercent, markupOf, suggestedPriceUzs } from '@/lib/pricing';
 import { ConsoleHeader } from '../console-header';
 import { createPlan, createStore, resetStoreUsage, togglePlan, updateStore } from './actions';
 import { FinanceSection } from './finance-section';
 import { PacksSettingsSection } from './packs-settings-section';
+import { CredentialsSection } from './credentials-section';
 import { PaymentsSection } from './payments-section';
+import { PricingSection } from './pricing-section';
 
 export const dynamic = 'force-dynamic';
 
-// Decart Lucy VTON realtime: 2 credits/s at $0.01 per credit
-const USD_PER_LIVE_SECOND = 0.02;
 const MONTH_MS = 30 * 24 * 60 * 60_000;
 const DAY_MS = 24 * 60 * 60_000;
 
@@ -52,12 +53,14 @@ async function loadAdminData() {
   };
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ cred?: string }> }) {
+  const { cred } = await searchParams;
   const user = await currentUser();
   if (!user) redirect('/login?next=/admin');
   if (user.role !== 'admin') redirect('/dashboard');
   const [{ stats, plans, storeRows }, settings] = await Promise.all([loadAdminData(), getSettings(getDb())]);
   const rate = usdRate(settings);
+  const markup = markupOf(settings.markup);
   const activePlans = plans.filter((plan) => plan.isActive);
   const now = new Date();
 
@@ -77,6 +80,7 @@ export default async function AdminPage() {
 
         <FinanceSection />
         <PaymentsSection />
+        <PricingSection />
 
         <section className="card">
           <h2>Do‘konlar</h2>
@@ -162,18 +166,19 @@ export default async function AdminPage() {
           </form>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Tarif</th><th>AI soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda (to‘liq sarflansa)</th><th>Holat</th><th /></tr></thead>
+              <thead><tr><th>Tarif</th><th>AI soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda (to‘liq sarflansa)</th><th>Tavsiya (×{markup})</th><th>Holat</th><th /></tr></thead>
               <tbody>
-                {plans.length === 0 && <tr><td colSpan={7} className="muted">Hali tarif yo‘q.</td></tr>}
+                {plans.length === 0 && <tr><td colSpan={8} className="muted">Hali tarif yo‘q.</td></tr>}
                 {plans.map((plan) => (
                   <tr key={plan.id}>
                     <td>{plan.name}</td>
                     <td>{plan.monthlySeconds.toLocaleString('uz-UZ')}</td>
                     <td>{som(plan.priceUzs)}</td>
-                    <td>{som(Math.round(plan.monthlySeconds * USD_PER_LIVE_SECOND * rate))} (${(plan.monthlySeconds * USD_PER_LIVE_SECOND).toFixed(0)})</td>
-                    <td style={{ color: plan.priceUzs - plan.monthlySeconds * USD_PER_LIVE_SECOND * rate >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>
-                      {som(Math.round(plan.priceUzs - plan.monthlySeconds * USD_PER_LIVE_SECOND * rate))}
+                    <td>{som(Math.round(costUzs(plan.monthlySeconds, rate)))}</td>
+                    <td style={{ color: plan.priceUzs >= costUzs(plan.monthlySeconds, rate) ? 'var(--c-ok)' : 'var(--c-danger)' }}>
+                      {som(Math.round(plan.priceUzs - costUzs(plan.monthlySeconds, rate)))} · {marginPercent(plan.priceUzs, costUzs(plan.monthlySeconds, rate))}%
                     </td>
+                    <td className="muted">{som(suggestedPriceUzs(plan.monthlySeconds, rate, markup))}</td>
                     <td><span className={plan.isActive ? 'badge badge-ok' : 'badge badge-off'}>{plan.isActive ? 'faol' : 'yopiq'}</span></td>
                     <td>
                       <form action={togglePlan}>
@@ -195,6 +200,7 @@ export default async function AdminPage() {
         </section>
 
         <PacksSettingsSection />
+        <CredentialsSection user={user} status={cred} />
       </main>
     </>
   );

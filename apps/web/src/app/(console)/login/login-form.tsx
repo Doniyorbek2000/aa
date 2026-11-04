@@ -32,6 +32,9 @@ export function LoginForm({ next, googleClientId }: Props) {
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
+  const [mode, setMode] = useState<'sms' | 'password'>('sms');
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
   const googleRef = useRef<HTMLDivElement | null>(null);
 
   const finish = (data: Record<string, unknown>) => {
@@ -87,9 +90,47 @@ export function LoginForm({ next, googleClientId }: Props) {
     else setError(ERRORS[String(data.reason)] ?? 'Kirib bo‘lmadi.');
   };
 
+  const signInWithPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsBusy(true);
+    setError(null);
+    const { ok, data } = await post('/api/auth/password', { login, password });
+    setIsBusy(false);
+    if (ok) finish(data);
+    else setError(typeof data.error === 'string' ? data.error : 'Kirib bo‘lmadi.');
+  };
+
+  const switchMode = (next: 'sms' | 'password') => {
+    setMode(next);
+    setError(null);
+  };
+
   return (
     <div className="card" style={{ display: 'grid', gap: 14 }}>
-      {step === 'phone' ? (
+      <div className="segmented" role="tablist" aria-label="Kirish usuli">
+        <button type="button" role="tab" aria-selected={mode === 'sms'} className={mode === 'sms' ? 'on' : ''} onClick={() => switchMode('sms')}>
+          SMS kod
+        </button>
+        <button type="button" role="tab" aria-selected={mode === 'password'} className={mode === 'password' ? 'on' : ''} onClick={() => switchMode('password')}>
+          Login va parol
+        </button>
+      </div>
+      {mode === 'password' ? (
+        <form onSubmit={signInWithPassword} style={{ display: 'grid', gap: 10 }}>
+          <label className="field">
+            <span>Login</span>
+            <input className="input" autoComplete="username" autoCapitalize="none" value={login} onChange={(e) => setLogin(e.target.value)} required />
+          </label>
+          <label className="field">
+            <span>Parol</span>
+            <input className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </label>
+          <button className="btn" type="submit" disabled={isBusy}>
+            {isBusy ? 'Tekshirilmoqda…' : 'Kirish'}
+          </button>
+          <p className="muted" style={{ fontSize: 13 }}>Faqat adminlar uchun. Login va parol admin paneldagi “Kirish sozlamalari”da o‘rnatiladi.</p>
+        </form>
+      ) : step === 'phone' ? (
         <form onSubmit={requestCode} style={{ display: 'grid', gap: 10 }}>
           <label className="field">
             <span>Telefon raqami</span>

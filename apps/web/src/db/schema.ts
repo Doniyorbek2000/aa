@@ -17,6 +17,19 @@ export const users = pgTable('users', {
   createdAt: createdAt(),
 });
 
+/**
+ * Login and password for admins who prefer them to an SMS code. Kept apart from users so a
+ * password hash can never ride along in a users query; only a salted scrypt hash is stored.
+ */
+export const credentials = pgTable('credentials', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  login: text('login').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** Signed-in sessions; only a SHA-256 of the token is stored, so a database leak cannot sign anyone in. */
 export const sessions = pgTable(
   'sessions',
