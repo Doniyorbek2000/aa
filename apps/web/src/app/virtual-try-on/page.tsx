@@ -19,7 +19,7 @@ export default function VirtualTryOnPillarPage() {
           --lav: #eae4f7;
           --wash: #faf7f8;
           --body: #4a3535;
-          font-family: 'Roobert', 'Inter', -apple-system, sans-serif;
+          font-family: 'Onest', -apple-system, sans-serif;
           background: var(--paper); color: var(--ink);
           letter-spacing: -0.01em; min-height: 100vh;
         }

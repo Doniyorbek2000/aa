@@ -17,11 +17,13 @@ import { useDecartLive } from './use-decart-live';
 
 export const CWS_URL = '/install';
 
+// A12's own sample garments: tops first, since the studio opens on "upper body"
 export const DEFAULT_GARMENTS = [
-  '/tryon_assets/garment1.png',
-  '/tryon_assets/garment2.png',
-  '/tryon_assets/garment3.png',
-  '/tryon_assets/garment4.png',
+  '/garments/adm-tshirt.jpg',
+  '/garments/adm-bomber.jpg',
+  '/garments/adm-hoodie.jpg',
+  '/garments/adm-dress.jpg',
+  '/garments/adm-set.jpg',
 ];
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -73,7 +75,7 @@ export function PoweredByA12() {
  * Cuts the garment out of its studio background (edge flood fill, so white parts of the
  * garment survive) and crops it to the garment, keeping the photo's proportions.
  */
-function createCleanGarmentCanvas(img: HTMLImageElement): HTMLCanvasElement {
+export function createCleanGarmentCanvas(img: HTMLImageElement): HTMLCanvasElement {
   const off = document.createElement('canvas');
   const scale = Math.min(1, 512 / Math.max(img.naturalWidth || 420, img.naturalHeight || 560));
   const w = Math.max(1, Math.round((img.naturalWidth || 420) * scale));

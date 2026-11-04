@@ -52,6 +52,16 @@ describe('payments', () => {
     assert.equal(store?.periodStart.toISOString(), t1.toISOString());
   });
 
+  it('approving a plan leaves a store the admin paused paused', async () => {
+    const { db, plan, pay, storeNow } = await setup();
+    await db.update(schema.stores).set({ status: 'paused' });
+    const payment = await pay({ kind: 'plan', planId: plan.id, minutes: 500 });
+    assert.equal(await approvePayment(db, payment.id, t1), true);
+    const store = await storeNow();
+    assert.equal(store?.status, 'paused');
+    assert.equal(store?.planId, plan.id);
+  });
+
   it('approving a pack adds its minutes once, however many times it is clicked', async () => {
     const { db, pay, storeNow } = await setup();
     const payment = await pay({ kind: 'pack', minutes: 10 });

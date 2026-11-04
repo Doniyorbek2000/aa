@@ -1,8 +1,8 @@
 import { and, count, desc, eq, gte, ne, sum } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { getDb, schema } from '@/db';
-import { maskPhone } from '@/lib/auth/phone';
 import { currentUser } from '@/lib/auth/session';
+import { isPlanExpired, planEndsAt } from '@/lib/billing';
 import { getSettings, usdRate } from '@/lib/payments';
 import { ConsoleHeader } from '../console-header';
 import { createPlan, createStore, resetStoreUsage, togglePlan, updateStore } from './actions';
@@ -59,6 +59,7 @@ export default async function AdminPage() {
   const [{ stats, plans, storeRows }, settings] = await Promise.all([loadAdminData(), getSettings(getDb())]);
   const rate = usdRate(settings);
   const activePlans = plans.filter((plan) => plan.isActive);
+  const now = new Date();
 
   return (
     <>
@@ -93,15 +94,17 @@ export default async function AdminPage() {
           </form>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Do‘kon</th><th>Egasi</th><th>Tarif</th><th>Sarf</th><th>Holat</th><th /></tr></thead>
+              <thead><tr><th>Do‘kon</th><th>Egasi</th><th>Tarif</th><th>Sarf</th><th>Muddat</th><th>Holat</th><th /></tr></thead>
               <tbody>
-                {storeRows.length === 0 && <tr><td colSpan={6} className="muted">Hali do‘kon yo‘q.</td></tr>}
+                {storeRows.length === 0 && <tr><td colSpan={7} className="muted">Hali do‘kon yo‘q.</td></tr>}
                 {storeRows.map(({ store, plan, owner }) => {
                   const limit = (plan?.monthlyMinutes ?? 0) * 60;
+                  const isExpired = limit > 0 && isPlanExpired(store.periodStart, now);
                   return (
                     <tr key={store.id}>
                       <td>{store.name}</td>
-                      <td>{owner.phone ? maskPhone(owner.phone) : owner.email}</td>
+                      {/* Admins call shop owners, so the full number is shown here */}
+                      <td>{owner.phone ? <a className="console-link" href={`tel:${owner.phone}`}>{owner.phone}</a> : owner.email}</td>
                       <td>
                         <form action={updateStore} className="form-row">
                           <input type="hidden" name="id" value={store.id} />
@@ -112,7 +115,19 @@ export default async function AdminPage() {
                           <button className="btn btn-ghost btn-small" type="submit">Saqlash</button>
                         </form>
                       </td>
-                      <td>{minutes(store.usedSeconds)} / {limit ? minutes(limit) : '—'}</td>
+                      <td>
+                        {minutes(store.usedSeconds)} / {limit ? minutes(limit) : '—'}
+                        {store.extraSeconds > 0 && <div className="muted" style={{ fontSize: 13 }}>+ paket {minutes(store.extraSeconds)}</div>}
+                      </td>
+                      <td>
+                        {limit === 0 ? (
+                          <span className="muted">—</span>
+                        ) : isExpired ? (
+                          <span className="badge badge-off">tugagan</span>
+                        ) : (
+                          planEndsAt(store.periodStart).toLocaleDateString('uz-UZ')
+                        )}
+                      </td>
                       <td><span className={store.status === 'active' ? 'badge badge-ok' : 'badge badge-off'}>{store.status === 'active' ? 'faol' : 'to‘xtatilgan'}</span></td>
                       <td>
                         <div className="form-row">
@@ -123,7 +138,9 @@ export default async function AdminPage() {
                           </form>
                           <form action={resetStoreUsage}>
                             <input type="hidden" name="id" value={store.id} />
-                            <button className="btn btn-ghost btn-small" type="submit">Yangi oy</button>
+                            <button className="btn btn-ghost btn-small" type="submit" title="Bugundan 30 kunlik yangi oy, sarf nolga tushadi">
+                              +30 kun
+                            </button>
                           </form>
                         </div>
                       </td>
@@ -161,7 +178,13 @@ export default async function AdminPage() {
                     <td>
                       <form action={togglePlan}>
                         <input type="hidden" name="id" value={plan.id} />
-                        <button className="btn btn-ghost btn-small" type="submit">{plan.isActive ? 'Yopish' : 'Ochish'}</button>
+                        <button
+                          className="btn btn-ghost btn-small"
+                          type="submit"
+                          title={plan.isActive ? 'Sotuvdan olinadi; uni to‘lagan do‘konlar muddati tugaguncha ishlataveradi' : 'Yana sotuvga chiqadi'}
+                        >
+                          {plan.isActive ? 'Sotuvdan olish' : 'Sotuvga chiqarish'}
+                        </button>
                       </form>
                     </td>
                   </tr>

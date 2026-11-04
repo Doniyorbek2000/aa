@@ -38,30 +38,32 @@ export function formatCard(raw: string): string {
 
 /**
  * Approves a pending payment and grants what it bought. The pending→approved flip is the guard:
- * a second click (or a second admin) finds nothing pending and grants nothing.
+ * a second click (or a second admin) finds nothing pending and grants nothing. One transaction,
+ * so a payment is never marked approved without its minutes being granted.
  */
 export async function approvePayment(db: AuthDb, paymentId: string, now: Date): Promise<boolean> {
-  const [payment] = await db
-    .update(schema.payments)
-    .set({ status: 'approved', reviewedAt: now })
-    .where(and(eq(schema.payments.id, paymentId), eq(schema.payments.status, 'pending')))
-    .returning();
-  if (!payment) return false;
-  const [store] = await db.select().from(schema.stores).where(eq(schema.stores.id, payment.storeId));
-  if (!store) return true;
-  if (payment.kind === 'plan') {
-    await db
-      .update(schema.stores)
-      .set({ planId: payment.planId, usedSeconds: 0, periodStart: now, status: 'active' })
-      .where(eq(schema.stores.id, store.id));
-  } else {
-    // Concurrent live sessions may be spending top-ups, so add with SQL, not a read-modify-write
-    await db
-      .update(schema.stores)
-      .set({ extraSeconds: sql`${schema.stores.extraSeconds} + ${payment.minutes * 60}` })
-      .where(eq(schema.stores.id, store.id));
-  }
-  return true;
+  return db.transaction(async (tx) => {
+    const [payment] = await tx
+      .update(schema.payments)
+      .set({ status: 'approved', reviewedAt: now })
+      .where(and(eq(schema.payments.id, paymentId), eq(schema.payments.status, 'pending')))
+      .returning();
+    if (!payment) return false;
+    if (payment.kind === 'plan') {
+      await tx
+        .update(schema.stores)
+        // A store the admin paused stays paused: paying does not override that decision
+        .set({ planId: payment.planId, usedSeconds: 0, periodStart: now })
+        .where(eq(schema.stores.id, payment.storeId));
+    } else {
+      // Concurrent live sessions may be spending top-ups, so add with SQL, not a read-modify-write
+      await tx
+        .update(schema.stores)
+        .set({ extraSeconds: sql`${schema.stores.extraSeconds} + ${payment.minutes * 60}` })
+        .where(eq(schema.stores.id, payment.storeId));
+    }
+    return true;
+  });
 }
 
 export async function rejectPayment(db: AuthDb, paymentId: string, note: string | null, now: Date): Promise<boolean> {

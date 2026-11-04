@@ -5,7 +5,8 @@
  */
 const ESKIZ_API = 'https://notify.eskiz.uz/api';
 const TOKEN_REUSE_MS = 25 * 24 * 60 * 60_000;
-const DEFAULT_TEMPLATE = 'A12 ilovasiga kirish kodi: {code}';
+// Eskiz template #98774, approved 2026-11-04 for sender 4546; any change needs a new approval
+const DEFAULT_TEMPLATE = 'Kodni hech kimga bermang! A12 ilovasiga kirish uchun tasdiqlash kodi: {code}';
 
 let cached: { token: string; until: number } | null = null;
 

@@ -39,7 +39,9 @@ export default function LooksTab() {
       </Text>
       {looks !== null && looks.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="shirt-outline" size={40} color={p.muted} />
+          <View style={styles.emptyIcon}>
+            <Ionicons name="shirt-outline" size={34} color={p.accent} />
+          </View>
           <Text style={styles.emptyTitle}>{t.looksEmptyTitle}</Text>
           <Text style={styles.emptyBody}>{t.looksEmptyBody}</Text>
           <Pressable style={styles.cta} onPress={() => router.navigate('/')} accessibilityRole="button">
@@ -77,6 +79,7 @@ const makeStyles = (p: Palette) =>
     grid: { paddingHorizontal: 16, paddingBottom: 24, gap: GAP },
     tile: { borderRadius: 14, overflow: 'hidden', backgroundColor: p.wash },
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },
+    emptyIcon: { width: 76, height: 76, borderRadius: 38, backgroundColor: p.wash, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
     emptyTitle: { fontSize: 20, fontWeight: '600', color: p.ink },
     emptyBody: { fontSize: 15, color: p.body, textAlign: 'center', lineHeight: 21, maxWidth: 340 },
     cta: { marginTop: 8, minHeight: 48, paddingHorizontal: 22, borderRadius: 12, backgroundColor: p.ink, justifyContent: 'center' },

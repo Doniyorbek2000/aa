@@ -34,6 +34,10 @@ const DEMO_GARMENTS = DEMO_GARMENT_PATHS.map(absoluteAssetUrl);
 // Side-by-side layout once there is room for camera plus a usable panel (tablets, landscape)
 const WIDE_BREAKPOINT = 720;
 const SIDE_PANEL_WIDTH = 380;
+// Live AI bills per second: dev builds keep it off unless EXPO_PUBLIC_LIVE_AI=1 is set for Metro
+const IS_LIVE_AI_ENABLED = !__DEV__ || process.env.EXPO_PUBLIC_LIVE_AI === '1';
+// The garment sheet slides this far over the camera so its rounded top shows the picture behind it
+const SHEET_OVERLAP = 22;
 
 export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | null }) {
   const { t } = useI18n();
@@ -185,7 +189,7 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
             garmentUri={selected}
             garmentType={garmentType}
             facing={facing}
-            authToken={token}
+            authToken={IS_LIVE_AI_ENABLED ? token : null}
             onStatus={setLiveStatus}
             onAiState={setAiState}
           />
@@ -194,7 +198,7 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
         {!isLive && selected && <GarmentOverlay ref={overlayRef} uri={selected} width={garmentWidth} />}
 
         <View style={[styles.topBar, { top: insets.top + 8, left: insets.left + 14, right: insets.right + 14 }]}>
-          <View style={styles.brandRow} accessibilityRole="header" accessibilityLabel="A12">
+          <View style={styles.brandPill} accessibilityRole="header" accessibilityLabel="A12">
             <Image source={require('../assets/adaptive-icon.png')} style={styles.brandMark} contentFit="contain" />
             <Text style={styles.brand}>A12</Text>
           </View>
@@ -210,29 +214,42 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
             />
           </View>
         </View>
-        {isLive && (aiState === 'signin' || aiState === 'limit') && (
-          <Pressable
-            style={[styles.aiBanner, { bottom: isWide ? 14 : 52 }]}
-            onPress={aiState === 'signin' ? () => router.push('/login') : undefined}
-            disabled={aiState !== 'signin'}
-            accessibilityRole={aiState === 'signin' ? 'button' : 'text'}
-          >
-            <Ionicons name={aiState === 'signin' ? 'sparkles' : 'time-outline'} size={16} color="#140f10" />
-            <Text style={styles.aiBannerText}>{aiState === 'signin' ? t.liveSignIn : t.liveLimit}</Text>
-          </Pressable>
-        )}
-        {!isWide && <Text style={styles.hint}>{hint}</Text>}
+        <View style={[styles.overlayStack, { bottom: isWide ? 14 : SHEET_OVERLAP + 12 }]} pointerEvents="box-none">
+          {IS_LIVE_AI_ENABLED && isLive && (aiState === 'signin' || aiState === 'limit') && (
+            <Pressable
+              style={styles.aiBanner}
+              onPress={aiState === 'signin' ? () => router.push('/login') : undefined}
+              disabled={aiState !== 'signin'}
+              accessibilityRole={aiState === 'signin' ? 'button' : 'text'}
+            >
+              <Ionicons name={aiState === 'signin' ? 'sparkles' : 'time-outline'} size={16} color="#140f10" />
+              <Text style={styles.aiBannerText}>{aiState === 'signin' ? t.liveSignIn : t.liveLimit}</Text>
+              {aiState === 'signin' && <Ionicons name="chevron-forward" size={16} color="#140f10" />}
+            </Pressable>
+          )}
+          {!isWide && (
+            <View style={styles.hint} accessibilityLiveRegion="polite">
+              {liveStatus === 'loading' ? (
+                <ActivityIndicator size="small" color="#fffffc" />
+              ) : (
+                <View style={[styles.hintDot, liveStatus === 'tracking' || liveStatus === 'ai' ? styles.hintDotOn : null]} />
+              )}
+              <Text style={styles.hintText}>{hint}</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       <View
         style={
           isWide
             ? [styles.sidePanel, { paddingTop: insets.top + 12, paddingRight: insets.right + 12 }]
-            : [styles.bottomPanel, { paddingLeft: insets.left + 10, paddingRight: insets.right + 10 }]
+            : [styles.bottomPanel, { paddingLeft: insets.left, paddingRight: insets.right }]
         }
       >
         {isWide && <Text style={styles.sideHint}>{hint}</Text>}
         <GarmentBar
+          style={isWide ? undefined : styles.sheetBar}
           garments={garments}
           selected={selected}
           garmentType={garmentType}
@@ -306,40 +323,54 @@ const makeStyles = (p: Palette) =>
     rootWide: { flexDirection: 'row' },
     stage: { flex: 1, overflow: 'hidden' },
     topBar: { position: 'absolute', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    brandRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    // Same scrim pill as the round buttons, so the brand stays readable over a bright camera picture
+    brandPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 44,
+      paddingLeft: 2,
+      paddingRight: 14,
+      borderRadius: 22,
+      backgroundColor: 'rgba(6,5,3,0.42)',
+    },
     // The mark's PNG has generous padding (it doubles as the adaptive icon), so it is drawn large
-    brandMark: { width: 44, height: 44, marginLeft: -8 },
-    brand: { color: '#fffffc', fontSize: 22, fontWeight: '700', letterSpacing: -0.6, textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 6 },
+    brandMark: { width: 40, height: 40 },
+    brand: { color: '#fffffc', fontSize: 19, fontWeight: '700', letterSpacing: -0.4 },
+    overlayStack: { position: 'absolute', left: 14, right: 14, alignItems: 'center', gap: 8 },
     aiBanner: {
-      position: 'absolute',
-      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      maxWidth: '92%',
+      maxWidth: '100%',
       paddingHorizontal: 14,
-      paddingVertical: 9,
-      borderRadius: 999,
+      paddingVertical: 10,
+      borderRadius: 18,
       backgroundColor: p.accent,
     },
-    aiBannerText: { color: '#140f10', fontSize: 13, fontWeight: '700' },
+    aiBannerText: { flexShrink: 1, color: '#140f10', fontSize: 13, lineHeight: 18, fontWeight: '700' },
     topActions: { flexDirection: 'row', gap: 10 },
-    round: { width: 44, height: 44, borderRadius: 22, backgroundColor: p.scrim, alignItems: 'center', justifyContent: 'center' },
+    round: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(6,5,3,0.42)', alignItems: 'center', justifyContent: 'center' },
     hint: {
-      position: 'absolute',
-      bottom: 10,
-      alignSelf: 'center',
-      maxWidth: '92%',
-      textAlign: 'center',
-      color: '#fffffc',
-      fontSize: 12,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      maxWidth: '100%',
+      backgroundColor: 'rgba(6,5,3,0.55)',
       paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingVertical: 7,
       borderRadius: 999,
+    },
+    hintDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#f2b84b' },
+    hintDotOn: { backgroundColor: '#5fd38d' },
+    hintText: { flexShrink: 1, color: '#fffffc', fontSize: 12, lineHeight: 16, fontWeight: '500' },
+    bottomPanel: {
+      marginTop: -SHEET_OVERLAP,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      backgroundColor: p.paper,
       overflow: 'hidden',
     },
-    bottomPanel: { paddingTop: 8, paddingBottom: 8, backgroundColor: '#000' },
+    sheetBar: { borderRadius: 0, paddingTop: 16, paddingBottom: 12, paddingHorizontal: 16 },
     sidePanel: { width: SIDE_PANEL_WIDTH, paddingLeft: 12, paddingBottom: 12, backgroundColor: p.wash, gap: 12 },
     sideHint: { color: p.muted, fontSize: 13 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 14, backgroundColor: p.paper },
