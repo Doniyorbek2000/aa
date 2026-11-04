@@ -1,11 +1,10 @@
 /**
  * Video ad variants: a shop's product video is re-rendered by Decart in the background
- * (Lucy 2.6 for scene edits, Lucy VTON for outfits). Both bill $0.04 per output second, twice
- * live AI, so each video second takes two seconds of the shop's plan.
+ * (Lucy 2.6 for scene edits, Lucy VTON for outfits). What a video second costs the shop follows
+ * the Decart prices the admin sets (see pricing.ts videoPlanSeconds).
  */
 import { cleanLine } from './studio.ts';
 
-export const VIDEO_PLAN_SECONDS_PER_SECOND = 2;
 export const MAX_VIDEO_SECONDS = 60;
 export const MAX_VIDEO_BYTES = 60_000_000;
 export const VIDEO_PRESETS = ['background', 'color', 'outfit', 'custom'] as const;

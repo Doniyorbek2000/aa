@@ -1,6 +1,6 @@
 import { getDb, schema } from '@/db';
 import { formatCard, getSettings, usdRate } from '@/lib/payments';
-import { costUzs, marginPercent, markupOf, suggestedPriceUzs } from '@/lib/pricing';
+import { costUzs, marginPercent, markupOf, pricesOf, suggestedPriceUzs } from '@/lib/pricing';
 import { createPack, savePaymentSettings, togglePack } from './actions';
 
 const som = (value: number) => `${Math.round(value).toLocaleString('uz-UZ')} so‘m`;
@@ -11,6 +11,7 @@ export async function PacksSettingsSection() {
   const [packs, settings] = await Promise.all([db.select().from(schema.packs).orderBy(schema.packs.seconds), getSettings(db)]);
   const rate = usdRate(settings);
   const markup = markupOf(settings.markup);
+  const prices = pricesOf(settings);
 
   return (
     <>
@@ -19,7 +20,7 @@ export async function PacksSettingsSection() {
         <form action={createPack} className="form-row" style={{ marginBottom: 16 }}>
           <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="+600 soniya" /></label>
           <label className="field"><span>AI soniya</span><input className="input" name="seconds" type="number" min={30} step={1} required placeholder="600" /></label>
-          <label className="field"><span>Narxi (so‘m)</span><input className="input" name="priceUzs" type="number" min={0} required placeholder="1200000" /></label>
+          <label className="field"><span>Narxi (so‘m)</span><input className="input" name="priceUzs" type="number" min={0} placeholder="bo‘sh = tavsiya narx" /></label>
           <button className="btn" type="submit">Paket qo‘shish</button>
         </form>
         <div className="table-wrap">
@@ -28,7 +29,7 @@ export async function PacksSettingsSection() {
             <tbody>
               {packs.length === 0 && <tr><td colSpan={8} className="muted">Hali paket yo‘q.</td></tr>}
               {packs.map((pack) => {
-                const cost = costUzs(pack.seconds, rate);
+                const cost = costUzs(pack.seconds, rate, prices);
                 const margin = marginPercent(pack.priceUzs, cost);
                 return (
                   <tr key={pack.id}>
@@ -37,7 +38,7 @@ export async function PacksSettingsSection() {
                     <td>{som(pack.priceUzs)}</td>
                     <td>{som(cost)}</td>
                     <td style={{ color: margin >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>{som(pack.priceUzs - cost)} · {margin}%</td>
-                    <td className="muted">{som(suggestedPriceUzs(pack.seconds, rate, markup))}</td>
+                    <td className="muted">{som(suggestedPriceUzs(pack.seconds, rate, markup, prices))}</td>
                     <td><span className={pack.isActive ? 'badge badge-ok' : 'badge badge-off'}>{pack.isActive ? 'sotuvda' : 'yopiq'}</span></td>
                     <td>
                       <form action={togglePack}>

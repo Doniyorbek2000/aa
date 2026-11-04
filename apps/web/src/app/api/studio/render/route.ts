@@ -2,7 +2,9 @@ import { and, eq } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { userFromRequest } from '@/lib/auth/session';
 import { chargeStoreSession, recordLiveSession, refundStoreSeconds } from '@/lib/billing';
-import { editImage, IMAGE_PLAN_SECONDS, IMAGE_TYPES, imageResponse } from '@/lib/decart-image';
+import { editImage, IMAGE_TYPES, imageResponse } from '@/lib/decart-image';
+import { getSettings } from '@/lib/payments';
+import { imagePlanSeconds, pricesOf } from '@/lib/pricing';
 import { MAX_IMAGE_BYTES } from '@/lib/public-image';
 import { cleanLine, isStudioPreset, studioPrompt } from '@/lib/studio';
 
@@ -38,14 +40,15 @@ export async function POST(request: Request) {
   const [store] = await db.select().from(schema.stores).where(ownsStore);
   if (!store) return fail(404, 'Store not found.');
 
-  const charge = await chargeStoreSession(db, store.widgetKey, IMAGE_PLAN_SECONDS, new Date());
-  if (!charge.ok) return fail(402, 'Your plan has no AI minutes left.');
+  const planSeconds = imagePlanSeconds(pricesOf(await getSettings(db)));
+  const charge = await chargeStoreSession(db, store.widgetKey, planSeconds, new Date());
+  if (!charge.ok) return fail(402, 'Your AI seconds balance is empty.');
   try {
     const result = await editImage({ apiKey, image, prompt });
-    await recordLiveSession(db, { storeId: store.id, userId: user.id, source: 'studio-image', seconds: IMAGE_PLAN_SECONDS }).catch(() => {});
+    await recordLiveSession(db, { storeId: store.id, userId: user.id, source: 'studio-image', seconds: planSeconds }).catch(() => {});
     return imageResponse(result);
   } catch (error) {
-    await refundStoreSeconds(db, store.id, IMAGE_PLAN_SECONDS).catch(() => {});
+    await refundStoreSeconds(db, store.id, planSeconds).catch(() => {});
     console.error('Studio render failed', error instanceof Error ? error.message : 'unknown error');
     return fail(502, 'The photo could not be made right now.');
   }

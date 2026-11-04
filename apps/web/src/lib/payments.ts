@@ -6,7 +6,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { AuthDb } from './auth/store.ts';
 import * as schema from '../db/schema.ts';
 
-export const SETTING_KEYS = ['cardNumber', 'cardHolder', 'bankName', 'usdRate', 'markup'] as const;
+export const SETTING_KEYS = ['cardNumber', 'cardHolder', 'bankName', 'usdRate', 'markup', 'priceLive', 'priceVideo', 'priceImage'] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 export type PaymentSettings = Record<SettingKey, string>;
 // Used for cost reports until the admin sets today's rate
@@ -21,6 +21,9 @@ export async function getSettings(db: AuthDb): Promise<PaymentSettings> {
     bankName: value('bankName'),
     usdRate: value('usdRate'),
     markup: value('markup'),
+    priceLive: value('priceLive'),
+    priceVideo: value('priceVideo'),
+    priceImage: value('priceImage'),
   };
 }
 

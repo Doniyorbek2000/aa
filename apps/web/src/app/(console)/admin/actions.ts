@@ -9,7 +9,8 @@ import { currentUser } from '@/lib/auth/session';
 import { envList, userForPhone } from '@/lib/auth/store';
 import { credentialProblem, normaliseLogin, setCredentials } from '@/lib/auth/password';
 import { randomToken } from '@/lib/auth/tokens';
-import { approvePayment, rejectPayment, saveSettings } from '@/lib/payments';
+import { approvePayment, getSettings, rejectPayment, saveSettings, usdRate } from '@/lib/payments';
+import { markupOf, pricesOf, suggestedPriceUzs } from '@/lib/pricing';
 import { int, oneOf, text, uuid } from '../validate';
 
 // Every action re-checks the role: a server action is a public endpoint, not just a button
@@ -20,6 +21,11 @@ async function requireAdmin() {
 }
 
 const done = () => revalidatePath('/admin');
+
+async function suggestedFor(db: ReturnType<typeof getDb>, seconds: number): Promise<number> {
+  const settings = await getSettings(db);
+  return suggestedPriceUzs(seconds, usdRate(settings), markupOf(settings.markup), pricesOf(settings));
+}
 
 export async function createPlan(form: FormData) {
   await requireAdmin();
@@ -72,9 +78,13 @@ export async function createPack(form: FormData) {
   await requireAdmin();
   const name = text(form, 'name', 40);
   const seconds = int(form, 'seconds', 30, 6_000_000);
-  const priceUzs = int(form, 'priceUzs', 0, 1_000_000_000);
-  if (!name || seconds === null || priceUzs === null) return;
-  await getDb().insert(schema.packs).values({ name, seconds, priceUzs });
+  if (!name || seconds === null) return;
+  const db = getDb();
+  // An empty price takes the suggested one: Decart cost x the saved markup
+  const isPriceEmpty = String(form.get('priceUzs') ?? '').trim() === '';
+  const priceUzs = isPriceEmpty ? await suggestedFor(db, seconds) : int(form, 'priceUzs', 0, 1_000_000_000);
+  if (priceUzs === null) return;
+  await db.insert(schema.packs).values({ name, seconds, priceUzs });
   done();
 }
 
@@ -93,7 +103,15 @@ export async function savePaymentSettings(form: FormData) {
   await requireAdmin();
   const cardNumber = (text(form, 'cardNumber', 40) ?? '').replace(/\D/g, '');
   const rate = int(form, 'usdRate', 1, 1_000_000);
-  const markup = Number((text(form, 'markup', 6) ?? '').replace(',', '.'));
+  const decimal = (key: string) => Number((text(form, key, 12) ?? '').replace(',', '.'));
+  const markup = decimal('markup');
+  // Decart's $ prices per feature; only sane positive values are kept
+  const prices = Object.fromEntries(
+    (['priceLive', 'priceVideo', 'priceImage'] as const)
+      .map((key) => [key, decimal(key)] as const)
+      .filter(([, value]) => Number.isFinite(value) && value > 0 && value <= 10)
+      .map(([key, value]) => [key, String(value)])
+  );
   // Forms post only their own fields; a missing field leaves the saved value alone
   await saveSettings(getDb(), {
     ...(cardNumber.length >= 12 && cardNumber.length <= 19 ? { cardNumber } : {}),
@@ -101,6 +119,7 @@ export async function savePaymentSettings(form: FormData) {
     ...(form.has('bankName') ? { bankName: text(form, 'bankName', 60) ?? '' } : {}),
     ...(rate ? { usdRate: String(rate) } : {}),
     ...(Number.isFinite(markup) && markup >= 1 && markup <= 20 ? { markup: String(markup) } : {}),
+    ...prices,
   });
   done();
 }

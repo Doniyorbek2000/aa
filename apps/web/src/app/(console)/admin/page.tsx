@@ -4,7 +4,7 @@ import { getDb, schema } from '@/db';
 import { currentUser } from '@/lib/auth/session';
 import { isPlanExpired, planEndsAt } from '@/lib/billing';
 import { getSettings, usdRate } from '@/lib/payments';
-import { costUzs, marginPercent, markupOf, suggestedPriceUzs } from '@/lib/pricing';
+import { costUzs, marginPercent, markupOf, pricesOf, suggestedPriceUzs } from '@/lib/pricing';
 import { ConsoleHeader } from '../console-header';
 import { createPlan, createStore, resetStoreUsage, togglePlan, updateStore } from './actions';
 import { FinanceSection } from './finance-section';
@@ -61,6 +61,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const [{ stats, plans, storeRows }, settings] = await Promise.all([loadAdminData(), getSettings(getDb())]);
   const rate = usdRate(settings);
   const markup = markupOf(settings.markup);
+  const prices = pricesOf(settings);
   const activePlans = plans.filter((plan) => plan.isActive);
   const now = new Date();
 
@@ -176,11 +177,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                     <td>{plan.name}</td>
                     <td>{plan.monthlySeconds.toLocaleString('uz-UZ')}</td>
                     <td>{som(plan.priceUzs)}</td>
-                    <td>{som(Math.round(costUzs(plan.monthlySeconds, rate)))}</td>
-                    <td style={{ color: plan.priceUzs >= costUzs(plan.monthlySeconds, rate) ? 'var(--c-ok)' : 'var(--c-danger)' }}>
-                      {som(Math.round(plan.priceUzs - costUzs(plan.monthlySeconds, rate)))} · {marginPercent(plan.priceUzs, costUzs(plan.monthlySeconds, rate))}%
+                    <td>{som(Math.round(costUzs(plan.monthlySeconds, rate, prices)))}</td>
+                    <td style={{ color: plan.priceUzs >= costUzs(plan.monthlySeconds, rate, prices) ? 'var(--c-ok)' : 'var(--c-danger)' }}>
+                      {som(Math.round(plan.priceUzs - costUzs(plan.monthlySeconds, rate, prices)))} · {marginPercent(plan.priceUzs, costUzs(plan.monthlySeconds, rate, prices))}%
                     </td>
-                    <td className="muted">{som(suggestedPriceUzs(plan.monthlySeconds, rate, markup))}</td>
+                    <td className="muted">{som(suggestedPriceUzs(plan.monthlySeconds, rate, markup, prices))}</td>
                     <td><span className={plan.isActive ? 'badge badge-ok' : 'badge badge-off'}>{plan.isActive ? 'faol' : 'yopiq'}</span></td>
                     <td>
                       <form action={togglePlan}>

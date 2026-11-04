@@ -1,6 +1,16 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_MARKUP, costUzs, marginPercent, markupOf, suggestedPriceUzs } from './pricing.ts';
+import {
+  DEFAULT_MARKUP,
+  DEFAULT_PRICES,
+  costUzs,
+  imagePlanSeconds,
+  marginPercent,
+  markupOf,
+  pricesOf,
+  suggestedPriceUzs,
+  videoPlanSeconds,
+} from './pricing.ts';
 
 describe('pricing', () => {
   it('prices a second of live AI from the dollar rate', () => {
@@ -18,6 +28,24 @@ describe('pricing', () => {
     assert.equal(markupOf('0.5'), DEFAULT_MARKUP);
     assert.equal(markupOf('abc'), DEFAULT_MARKUP);
     assert.equal(markupOf('2.5'), 2.5);
+  });
+
+  it('converts video and images into plan seconds from the Decart prices', () => {
+    const prices = pricesOf({});
+    assert.deepEqual(prices, DEFAULT_PRICES);
+    assert.equal(videoPlanSeconds(10, prices), 20);
+    assert.equal(imagePlanSeconds(prices), 1);
+    const cheaperVideo = pricesOf({ priceVideo: '0.03' });
+    assert.equal(videoPlanSeconds(10, cheaperVideo), 15);
+    assert.equal(imagePlanSeconds(pricesOf({ priceImage: '0.05' })), 3);
+  });
+
+  it('ignores prices that are missing, zero or absurd', () => {
+    assert.deepEqual(pricesOf({ priceLive: '0', priceVideo: '-1', priceImage: '999' }), DEFAULT_PRICES);
+  });
+
+  it('prices plan seconds at the live rate the admin set', () => {
+    assert.equal(costUzs(100, 12_800, pricesOf({ priceLive: '0.03' })), 38_400);
   });
 
   it('reports the margin, negative when the price is below cost', () => {

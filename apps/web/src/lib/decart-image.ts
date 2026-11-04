@@ -1,7 +1,5 @@
 /** Server-side call to Decart's Lucy Image 2 (image + prompt [+ reference image] → edited image). */
 export const IMAGE_MODEL = 'lucy-image-2';
-// One 720p image costs what one second of live AI does ($0.02), so it uses a second of a plan
-export const IMAGE_PLAN_SECONDS = 1;
 export const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export async function editImage(input: {

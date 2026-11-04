@@ -4,11 +4,12 @@ import { userFromRequest } from '@/lib/auth/session';
 import { chargeStoreSession, refundStoreSeconds } from '@/lib/billing';
 import { IMAGE_TYPES } from '@/lib/decart-image';
 import { mp4DurationSeconds } from '@/lib/mp4';
+import { getSettings } from '@/lib/payments';
+import { pricesOf, videoPlanSeconds } from '@/lib/pricing';
 import { MAX_IMAGE_BYTES } from '@/lib/public-image';
 import {
   MAX_VIDEO_BYTES,
   MAX_VIDEO_SECONDS,
-  VIDEO_PLAN_SECONDS_PER_SECOND,
   isVideoPreset,
   submitVideoJob,
   videoJob,
@@ -52,19 +53,19 @@ export async function POST(request: Request) {
   if (seconds === null) return fail(400, 'This MP4 could not be read; export it again (H.264, 16:9 or 9:16).');
   if (seconds > MAX_VIDEO_SECONDS) return fail(400, 'Videos can be up to 60 seconds long.');
   const videoSeconds = Math.max(1, Math.ceil(seconds));
-  const planSeconds = videoSeconds * VIDEO_PLAN_SECONDS_PER_SECOND;
-
   const db = getDb();
+  // Video costs more per second than live AI; the admin's Decart prices set how many plan seconds
+  const planSeconds = videoPlanSeconds(videoSeconds, pricesOf(await getSettings(db)));
   const owns = user.role === 'admin' ? eq(schema.stores.id, storeId) : and(eq(schema.stores.id, storeId), eq(schema.stores.ownerId, user.id));
   const [store] = await db.select().from(schema.stores).where(owns);
   if (!store) return fail(404, 'Store not found.');
 
   const charge = await chargeStoreSession(db, store.widgetKey, planSeconds, new Date());
-  if (!charge.ok) return fail(402, 'Your plan has no AI minutes left.');
+  if (!charge.ok) return fail(402, 'Your AI seconds balance is empty.');
   if (charge.seconds < planSeconds) {
     // Partial grants suit live sessions, not a video that is billed in full
     await refundStoreSeconds(db, store.id, charge.seconds);
-    return fail(402, 'Not enough AI minutes left in your plan for this video.');
+    return fail(402, 'Not enough AI seconds left for this video.');
   }
   try {
     const decartJobId = await submitVideoJob({ apiKey, model: job.model, video: new Blob([bytes], { type: 'video/mp4' }), prompt: job.prompt, reference });

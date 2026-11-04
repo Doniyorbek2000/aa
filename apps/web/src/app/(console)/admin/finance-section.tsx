@@ -3,7 +3,7 @@ import { getDb, schema } from '@/db';
 import { maxSessionSeconds } from '@/lib/decart';
 import { decartCredits, USD_PER_CREDIT } from '@/lib/decart-account';
 import { getSettings, usdRate } from '@/lib/payments';
-import { USD_PER_PLAN_SECOND } from '@/lib/pricing';
+import { pricesOf } from '@/lib/pricing';
 
 const MONTH_MS = 30 * 24 * 60 * 60_000;
 
@@ -30,11 +30,12 @@ export async function FinanceSection() {
       .where(and(gte(schema.videoJobs.createdAt, since), ne(schema.videoJobs.status, 'failed'))),
   ]);
   const rate = usdRate(settings);
+  const prices = pricesOf(settings);
   const revenue30 = Number(paid30?.uzs ?? 0);
-  const costUsd = (Number(live30?.s ?? 0) + Number(video30?.s ?? 0)) * USD_PER_PLAN_SECOND;
+  const costUsd = (Number(live30?.s ?? 0) + Number(video30?.s ?? 0)) * prices.live;
   const costUzs = costUsd * rate;
   const balanceUsd = credits === null ? null : credits * USD_PER_CREDIT;
-  const balanceSeconds = balanceUsd === null ? null : Math.floor(balanceUsd / USD_PER_PLAN_SECOND);
+  const balanceSeconds = balanceUsd === null ? null : Math.floor(balanceUsd / prices.live);
   const sessionSeconds = maxSessionSeconds(process.env.DECART_MAX_SESSION_SECONDS);
 
   return (

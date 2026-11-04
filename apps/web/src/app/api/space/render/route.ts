@@ -2,7 +2,9 @@ import { getDb } from '@/db';
 import { userFromRequest } from '@/lib/auth/session';
 import { chargeStoreSession, recordLiveSession, refundStoreSeconds } from '@/lib/billing';
 import { decartAllowedOrigins, isAllowedOrigin, maxSessionsPerDay } from '@/lib/decart';
-import { editImage, IMAGE_PLAN_SECONDS, IMAGE_TYPES, imageResponse } from '@/lib/decart-image';
+import { editImage, IMAGE_TYPES, imageResponse } from '@/lib/decart-image';
+import { getSettings } from '@/lib/payments';
+import { DEFAULT_PRICES, imagePlanSeconds, pricesOf } from '@/lib/pricing';
 import { fetchPublicImage, MAX_IMAGE_BYTES } from '@/lib/public-image';
 import { clientIp, createRateLimiter } from '@/lib/rate-limit';
 import { cleanPlacement, isSpaceKind, spacePrompt } from '@/lib/space';
@@ -59,10 +61,11 @@ export async function POST(request: Request) {
 
   const storeKey = form.get('storeKey');
   const hasDb = !!process.env.DATABASE_URL;
+  const planSeconds = imagePlanSeconds(hasDb ? pricesOf(await getSettings(getDb())) : DEFAULT_PRICES);
   let storeId: string | null = null;
   if (typeof storeKey === 'string' && STORE_KEY.test(storeKey) && hasDb) {
-    const charge = await chargeStoreSession(getDb(), storeKey, IMAGE_PLAN_SECONDS, now);
-    if (!charge.ok) return fail(402, 'This shop has no AI minutes left.');
+    const charge = await chargeStoreSession(getDb(), storeKey, planSeconds, now);
+    if (!charge.ok) return fail(402, 'This shop has no AI seconds left.');
     storeId = charge.storeId;
   } else if (!allowToday('site', now.getTime())) {
     return fail(429, 'Too many previews today, try again tomorrow.');
@@ -71,11 +74,11 @@ export async function POST(request: Request) {
   try {
     const result = await editImage({ apiKey, image: room, reference: product, prompt: spacePrompt(kind, placement) });
     if (hasDb) {
-      await recordLiveSession(getDb(), { storeId, userId: null, source: 'space-image', seconds: IMAGE_PLAN_SECONDS }).catch(() => {});
+      await recordLiveSession(getDb(), { storeId, userId: null, source: 'space-image', seconds: planSeconds }).catch(() => {});
     }
     return imageResponse(result);
   } catch (error) {
-    if (storeId) await refundStoreSeconds(getDb(), storeId, IMAGE_PLAN_SECONDS).catch(() => {});
+    if (storeId) await refundStoreSeconds(getDb(), storeId, planSeconds).catch(() => {});
     console.error('Room preview failed', error instanceof Error ? error.message : 'unknown error');
     return fail(502, 'The room preview could not be made right now.');
   }
