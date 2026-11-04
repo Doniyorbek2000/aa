@@ -10,9 +10,33 @@ import {
   PoweredByA12,
 } from '@/components/live-tryon-modal';
 
+type Feature = { title: string; body: string };
+
+// What the app does for a shopper; uz/ru/en, other languages read English
+const FEATURES: Partial<Record<string, Feature[]>> = {
+  uz: [
+    { title: 'Jonli kamera', body: 'Kiyim harakatingizga moslashib, ustingizda real vaqtda turadi.' },
+    { title: 'Istalgan do‘kondan', body: 'Mahsulot rasmini galereyadan tanlang yoki havolasini qo‘ying.' },
+    { title: 'Xonangizda ko‘ring', body: 'Mebel, chiroq yoki gilamni xonangiz rasmida sinab ko‘ring.' },
+    { title: 'Obrazlaringiz saqlanadi', body: 'AI suratlar telefoningizda qoladi, xohlasangiz ulashasiz.' },
+  ],
+  ru: [
+    { title: 'Живая камера', body: 'Вещь сидит на вас и следует за движениями в реальном времени.' },
+    { title: 'Из любого магазина', body: 'Выберите фото товара из галереи или вставьте ссылку.' },
+    { title: 'Примерьте к комнате', body: 'Мебель, свет или ковёр — прямо на фото вашей комнаты.' },
+    { title: 'Образы сохраняются', body: 'AI-снимки остаются на телефоне, ими легко поделиться.' },
+  ],
+  en: [
+    { title: 'Live camera', body: 'The garment stays on you and follows your moves in real time.' },
+    { title: 'From any shop', body: 'Pick a product photo from your gallery or paste its link.' },
+    { title: 'See it in your room', body: 'Try furniture, lamps or rugs on a photo of your room.' },
+    { title: 'Your looks are kept', body: 'AI shots stay on your phone, ready to share.' },
+  ],
+};
+
 export default function MobileExperiencePage() {
-  const { t } = useI18n();
-  const [selectedOS, setSelectedOS] = useState<'ios' | 'android'>('ios');
+  const { t, locale } = useI18n();
+  const features = FEATURES[locale] ?? FEATURES.en ?? [];
   const [selectedGarment, setSelectedGarment] = useState(DEFAULT_GARMENTS[0]);
   const [tryModalOpen, setTryModalOpen] = useState(false);
 
@@ -160,7 +184,7 @@ export default function MobileExperiencePage() {
       <main className="hero-stage">
         <section className="left-col">
           <div>
-            <span className="eyebrow">iOS &bull; Android &bull; WebRTC 30 FPS</span>
+            <span className="eyebrow">iOS &bull; Android</span>
             <h1>
               {t.mobileHeroTitle1}
               <br />
@@ -168,50 +192,13 @@ export default function MobileExperiencePage() {
             </h1>
             <p className="lede">{t.mobileHeroLede}</p>
 
-            <div>
-              <div className="os-tabs">
-                <button
-                  type="button"
-                  className={`os-tab ${selectedOS === 'ios' ? 'active' : ''}`}
-                  onClick={() => setSelectedOS('ios')}
-                >
-                  iOS (iPhone / iPad)
-                </button>
-                <button
-                  type="button"
-                  className={`os-tab ${selectedOS === 'android' ? 'active' : ''}`}
-                  onClick={() => setSelectedOS('android')}
-                >
-                  Android (Kotlin / VisionCamera)
-                </button>
-              </div>
-            </div>
-
             <div className="spec-cards">
-              <div className="spec-card">
-                <strong>
-                  {selectedOS === 'ios'
-                    ? 'AVFoundation + WebRTC'
-                    : 'CameraX + VisionCamera'}
-                </strong>
-                <span>Zero-copy 720p @ 30 FPS hardware stream</span>
-              </div>
-              <div className="spec-card">
-                <strong>Universal Share Sheet</strong>
-                <span>
-                  {selectedOS === 'ios'
-                    ? 'iOS Share Extension & Universal Links'
-                    : 'Android App Links & Intent Filter'}
-                </span>
-              </div>
-              <div className="spec-card">
-                <strong>Sub-150ms Lucy Stream</strong>
-                <span>Real-time cloth physics &amp; body tracking</span>
-              </div>
-              <div className="spec-card">
-                <strong>Shared Core SDK</strong>
-                <span>Unified TypeScript state across Web &amp; Mobile</span>
-              </div>
+              {features.map((feature) => (
+                <div key={feature.title} className="spec-card">
+                  <strong>{feature.title}</strong>
+                  <span>{feature.body}</span>
+                </div>
+              ))}
             </div>
 
             <div style={{ marginTop: '26px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
