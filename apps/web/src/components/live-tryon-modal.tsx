@@ -17,11 +17,17 @@ import { useDecartLive } from './use-decart-live';
 
 export const CWS_URL = '/install';
 
+// A12's own sample garments, women's and men's; a top first, since the studio opens on "upper body"
+// The studio rail: the samples plus the shopper's own photos
+const MAX_THUMBS = 6;
+const UPLOAD_LABEL: Record<string, string> = { uz: '+ O‘z rasmingizni yuklang', ru: '+ Загрузить своё фото', en: '+ Upload your own photo' };
+
 export const DEFAULT_GARMENTS = [
-  '/tryon_assets/garment1.png',
-  '/tryon_assets/garment2.png',
-  '/tryon_assets/garment3.png',
-  '/tryon_assets/garment4.png',
+  '/garments/adm-tshirt.jpg',
+  '/garments/adm-dress.jpg',
+  '/garments/adm-hoodie.jpg',
+  '/garments/adm-set.jpg',
+  '/garments/adm-bomber.jpg',
 ];
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -73,7 +79,7 @@ export function PoweredByA12() {
  * Cuts the garment out of its studio background (edge flood fill, so white parts of the
  * garment survive) and crops it to the garment, keeping the photo's proportions.
  */
-function createCleanGarmentCanvas(img: HTMLImageElement): HTMLCanvasElement {
+export function createCleanGarmentCanvas(img: HTMLImageElement): HTMLCanvasElement {
   const off = document.createElement('canvas');
   const scale = Math.min(1, 512 / Math.max(img.naturalWidth || 420, img.naturalHeight || 560));
   const w = Math.max(1, Math.round((img.naturalWidth || 420) * scale));
@@ -146,7 +152,7 @@ function drawWarpedGarmentMesh(
   ctx.translate(place.x, place.y);
   ctx.rotate(place.angle);
   if (hdEnhanced) ctx.filter = 'contrast(108%) saturate(108%)';
-  ctx.shadowColor = 'rgba(15, 5, 10, 0.36)';
+  ctx.shadowColor = 'rgba(5, 12, 24, 0.36)';
   ctx.shadowBlur = hdEnhanced ? 28 : 20;
   ctx.shadowOffsetY = 8;
 
@@ -183,7 +189,8 @@ export function LiveTryOnModal({
   /** Widget key of the shop that sent the visitor; its plan pays for the live AI minutes. */
   storeKey?: string | null | undefined;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const uploadLabel = UPLOAD_LABEL[locale] ?? UPLOAD_LABEL.en;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [connecting, setConnecting] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -711,9 +718,9 @@ export function LiveTryOnModal({
                     style={{
                       padding: '5px 11px',
                       borderRadius: '999px',
-                      border: isActive ? '1px solid #170404' : '1px solid rgba(23,4,4,0.15)',
-                      background: isActive ? '#170404' : 'rgba(255,255,252,0.85)',
-                      color: isActive ? '#fffffc' : '#170404',
+                      border: isActive ? '1px solid #0b1726' : '1px solid rgba(11, 23, 38,0.15)',
+                      background: isActive ? '#0b1726' : 'rgba(255,255,252,0.85)',
+                      color: isActive ? '#fffffc' : '#0b1726',
                       fontSize: '11.5px',
                       fontWeight: 500,
                       cursor: 'pointer',
@@ -736,7 +743,7 @@ export function LiveTryOnModal({
                   id="leffa-garment-type"
                   value={garmentType}
                   onChange={(event) => setGarmentType(event.target.value as LeffaGarmentType)}
-                  style={{ padding: '5px 8px', borderRadius: '8px', border: '1px solid rgba(23,4,4,0.2)', background: '#fff', color: '#170404', font: 'inherit' }}
+                  style={{ padding: '5px 8px', borderRadius: '8px', border: '1px solid rgba(11, 23, 38,0.2)', background: '#fff', color: '#0b1726', font: 'inherit' }}
                 >
                   <option value="upper_body">{t.garmentTops}</option>
                   <option value="lower_body">{t.garmentBottoms}</option>
@@ -756,23 +763,23 @@ export function LiveTryOnModal({
                 style={{
                   padding: '5px 11px',
                   borderRadius: '999px',
-                  border: '1px dashed rgba(23,4,4,0.3)',
-                  background: '#faf7f8',
-                  color: '#170404',
+                  border: '1px dashed rgba(11, 23, 38,0.3)',
+                  background: '#f6f8f7',
+                  color: '#0b1726',
                   fontSize: '11.5px',
                   fontWeight: 500,
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                 }}
               >
-                + Upload garment photo
+                {uploadLabel}
               </button>
             </div>
           </div>
 
           <div className="t-s2">
             <div className="t-garments">
-              {garmentList.slice(0, 4).map((garmentUrl, idx) => (
+              {garmentList.slice(0, MAX_THUMBS).map((garmentUrl, idx) => (
                 <div
                   key={garmentUrl}
                   className={`g-thumb ${thumbsVisible[idx] !== false ? 'visible' : ''} ${
@@ -871,9 +878,9 @@ export function LiveTryOnModal({
                 margin: '10px auto 0',
                 padding: '7px 14px',
                 borderRadius: '999px',
-                border: '1px solid rgba(23,4,4,0.2)',
+                border: '1px solid rgba(11, 23, 38,0.2)',
                 background: '#fffffc',
-                color: '#170404',
+                color: '#0b1726',
                 fontSize: '12.5px',
                 fontWeight: 500,
                 cursor: 'pointer',

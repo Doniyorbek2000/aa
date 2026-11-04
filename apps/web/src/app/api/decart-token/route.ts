@@ -18,6 +18,9 @@ const DAY_MS = 24 * 60 * 60_000;
 const STORE_KEY = /^[A-Za-z0-9_-]{16,64}$/;
 const allowClient = createRateLimiter(SESSIONS_PER_CLIENT, CLIENT_WINDOW_MS);
 const allowToday = createRateLimiter(maxSessionsPerDay(process.env.DECART_MAX_SESSIONS_PER_DAY), DAY_MS);
+// Free (non-shop) live AI is a short taste: one visitor must not spend the whole site budget
+const FREE_SESSIONS_PER_CLIENT_PER_DAY = 2;
+const allowFreeClientToday = createRateLimiter(FREE_SESSIONS_PER_CLIENT_PER_DAY, DAY_MS);
 
 /**
  * Mints a short-lived Decart token for one live try-on session. Every token is locked to the
@@ -64,7 +67,15 @@ export async function POST(request: Request) {
       return Response.json({ error: 'This shop has no live AI minutes left.', reason: charge.reason }, { status: 402 });
     }
     ({ seconds, storeId } = charge);
+  } else if (!storeKey) {
+    if (!allowFreeClientToday(clientIp(request), now.getTime())) {
+      return Response.json({ error: 'Today’s free live AI tries are used up.', reason: 'daily-limit' }, { status: 429 });
+    }
+    if (!allowToday('site', now.getTime())) {
+      return Response.json({ error: 'Too many live sessions, try again later.' }, { status: 429 });
+    }
   } else if (!allowToday('site', now.getTime())) {
+    // A shop key without a database cannot be billed, so it shares the site budget
     return Response.json({ error: 'Too many live sessions, try again later.' }, { status: 429 });
   }
 

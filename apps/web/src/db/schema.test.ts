@@ -26,7 +26,7 @@ describe('database schema', () => {
   it('migrates and links a store to its owner, plan and garments', async () => {
     const db = await freshDb();
     const [owner] = await db.insert(schema.users).values({ phone: '+998901234567' }).returning();
-    const [plan] = await db.insert(schema.plans).values({ name: 'Start', monthlyMinutes: 100, priceUzs: 990_000 }).returning();
+    const [plan] = await db.insert(schema.plans).values({ name: 'Start', monthlySeconds: 6000, priceUzs: 990_000 }).returning();
     assert.ok(owner && plan);
     const [store] = await db
       .insert(schema.stores)

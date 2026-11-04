@@ -22,7 +22,7 @@ async function setup(overrides: Partial<typeof schema.stores.$inferInsert> = {})
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: path.join(import.meta.dirname, '../../drizzle') });
   const [owner] = await db.insert(schema.users).values({ phone: '+998901234567' }).returning();
-  const [plan] = await db.insert(schema.plans).values({ name: 'Test', monthlyMinutes: 5, priceUzs: 1 }).returning();
+  const [plan] = await db.insert(schema.plans).values({ name: 'Test', monthlySeconds: 300, priceUzs: 1 }).returning();
   assert.ok(owner && plan);
   const [store] = await db
     .insert(schema.stores)
@@ -44,12 +44,26 @@ describe('chargeStoreSession', () => {
     assert.deepEqual(await chargeStoreSession(db, 'wk_0123456789abcdef', 180, t0), { ok: false, reason: 'limit' });
   });
 
-  it('starts a fresh allowance each 30-day period', async () => {
-    const { db, used } = await setup({ usedSeconds: 300 });
-    assert.deepEqual(await chargeStoreSession(db, 'wk_0123456789abcdef', 60, t0), { ok: false, reason: 'limit' });
-    const next = await chargeStoreSession(db, 'wk_0123456789abcdef', 60, new Date(t0.getTime() + BILLING_PERIOD_MS));
-    assert.ok(next.ok && next.seconds === 60);
-    assert.equal(await used(), 60);
+  it('ends the plan after its 30 days instead of renewing it unpaid', async () => {
+    const { db, used } = await setup();
+    const expired = new Date(t0.getTime() + BILLING_PERIOD_MS);
+    assert.deepEqual(await chargeStoreSession(db, 'wk_0123456789abcdef', 60, expired), { ok: false, reason: 'limit' });
+    assert.equal(await used(), 0);
+  });
+
+  it('keeps spending bought top-ups after the plan month ends', async () => {
+    const { db, store } = await setup({ extraSeconds: 100 });
+    const charge = await chargeStoreSession(db, 'wk_0123456789abcdef', 60, new Date(t0.getTime() + BILLING_PERIOD_MS));
+    assert.ok(charge.ok && charge.seconds === 60);
+    const [after] = await db.select().from(schema.stores).where(eq(schema.stores.id, store.id));
+    assert.equal(after?.extraSeconds, 40);
+  });
+
+  it('still serves a paid plan after the admin stops selling it', async () => {
+    const { db } = await setup();
+    await db.update(schema.plans).set({ isActive: false });
+    const charge = await chargeStoreSession(db, 'wk_0123456789abcdef', 60, t0);
+    assert.ok(charge.ok && charge.seconds === 60);
   });
 
   it('refuses unknown keys, paused stores and stores without a plan', async () => {

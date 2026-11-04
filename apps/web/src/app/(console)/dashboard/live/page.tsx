@@ -34,7 +34,7 @@ export default async function LiveShopPage() {
           <h1>Jonli efir</h1>
           <p className="muted">
             Efirda o‘zingizga katalogdagi kiyimlarni AI bilan kiyintiring. Ekranni OBS yoki ekran ulashish orqali Instagram / TikTok efiriga uzating.
-            Efir vaqti tarifingizdagi AI daqiqalardan sarflanadi.
+            Efir vaqti tarifingizdagi AI soniyalardan sarflanadi.
           </p>
         </div>
         {stores.length === 0 ? (

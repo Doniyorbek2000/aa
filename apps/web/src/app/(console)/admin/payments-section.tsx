@@ -12,7 +12,7 @@ export async function PaymentsSection() {
     id: schema.payments.id,
     title: schema.payments.title,
     kind: schema.payments.kind,
-    minutes: schema.payments.minutes,
+    seconds: schema.payments.seconds,
     amountUzs: schema.payments.amountUzs,
     status: schema.payments.status,
     adminNote: schema.payments.adminNote,
@@ -37,7 +37,7 @@ export async function PaymentsSection() {
               {pending.map((payment) => (
                 <tr key={payment.id}>
                   <td>{payment.store}<div className="muted" style={{ fontSize: 13 }}>{payment.createdAt.toLocaleString('uz-UZ')}</div></td>
-                  <td>{payment.title}<div className="muted" style={{ fontSize: 13 }}>{payment.kind === 'plan' ? 'oylik tarif' : 'paket'} · {payment.minutes} daq</div></td>
+                  <td>{payment.title}<div className="muted" style={{ fontSize: 13 }}>{payment.kind === 'plan' ? 'oylik tarif' : 'paket'} · {payment.seconds.toLocaleString('uz-UZ')} s</div></td>
                   <td><b>{som(payment.amountUzs)}</b></td>
                   <td><a className="console-link" href={`/api/payments/${payment.id}/receipt`} target="_blank" rel="noopener noreferrer">Ko‘rish</a></td>
                   <td>

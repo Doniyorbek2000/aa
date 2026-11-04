@@ -1,6 +1,6 @@
-import { AnywearStudioShell } from '@/components/anywear-studio-shell';
+import { A12Home } from '@/components/a12-home';
+import './home.css';
 
 export default function HomePage() {
-  return <AnywearStudioShell />;
+  return <A12Home />;
 }
-

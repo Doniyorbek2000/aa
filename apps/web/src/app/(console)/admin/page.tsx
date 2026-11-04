@@ -1,24 +1,25 @@
 import { and, count, desc, eq, gte, ne, sum } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { getDb, schema } from '@/db';
-import { maskPhone } from '@/lib/auth/phone';
 import { currentUser } from '@/lib/auth/session';
+import { isPlanExpired, planEndsAt } from '@/lib/billing';
 import { getSettings, usdRate } from '@/lib/payments';
+import { costUzs, marginPercent, markupOf, suggestedPriceUzs } from '@/lib/pricing';
 import { ConsoleHeader } from '../console-header';
 import { createPlan, createStore, resetStoreUsage, togglePlan, updateStore } from './actions';
 import { FinanceSection } from './finance-section';
 import { PacksSettingsSection } from './packs-settings-section';
+import { CredentialsSection } from './credentials-section';
 import { PaymentsSection } from './payments-section';
+import { PricingSection } from './pricing-section';
 
 export const dynamic = 'force-dynamic';
 
-// Decart Lucy VTON realtime: 2 credits/s at $0.01 per credit
-const USD_PER_LIVE_SECOND = 0.02;
 const MONTH_MS = 30 * 24 * 60 * 60_000;
 const DAY_MS = 24 * 60 * 60_000;
 
 const som = (value: number) => `${value.toLocaleString('uz-UZ')} so‘m`;
-const minutes = (seconds: number) => `${Math.round(seconds / 60)} daq`;
+const secs = (seconds: number) => `${Math.round(seconds).toLocaleString("uz-UZ")} s`;
 
 async function loadAdminData() {
   const db = getDb();
@@ -36,7 +37,7 @@ async function loadAdminData() {
       .select({ seconds: sum(schema.videoJobs.planSeconds) })
       .from(schema.videoJobs)
       .where(and(gte(schema.videoJobs.createdAt, since(MONTH_MS)), ne(schema.videoJobs.status, 'failed'))),
-    db.select().from(schema.plans).orderBy(schema.plans.monthlyMinutes),
+    db.select().from(schema.plans).orderBy(schema.plans.monthlySeconds),
     db
       .select({ store: schema.stores, plan: schema.plans, owner: schema.users })
       .from(schema.stores)
@@ -52,13 +53,16 @@ async function loadAdminData() {
   };
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ cred?: string }> }) {
+  const { cred } = await searchParams;
   const user = await currentUser();
   if (!user) redirect('/login?next=/admin');
   if (user.role !== 'admin') redirect('/dashboard');
   const [{ stats, plans, storeRows }, settings] = await Promise.all([loadAdminData(), getSettings(getDb())]);
   const rate = usdRate(settings);
+  const markup = markupOf(settings.markup);
   const activePlans = plans.filter((plan) => plan.isActive);
+  const now = new Date();
 
   return (
     <>
@@ -71,11 +75,12 @@ export default async function AdminPage() {
           <div className="stat"><b>{stats.stores}</b><span>do‘kon</span></div>
           <div className="stat"><b>{stats.today}</b><span>AI sessiya (bugun)</span></div>
           <div className="stat"><b>{stats.month}</b><span>AI sessiya (30 kun)</span></div>
-          <div className="stat"><b>{minutes(stats.monthSeconds)}</b><span>AI vaqt (30 kun)</span></div>
+          <div className="stat"><b>{secs(stats.monthSeconds)}</b><span>AI vaqt (30 kun)</span></div>
         </section>
 
         <FinanceSection />
         <PaymentsSection />
+        <PricingSection />
 
         <section className="card">
           <h2>Do‘konlar</h2>
@@ -93,15 +98,17 @@ export default async function AdminPage() {
           </form>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Do‘kon</th><th>Egasi</th><th>Tarif</th><th>Sarf</th><th>Holat</th><th /></tr></thead>
+              <thead><tr><th>Do‘kon</th><th>Egasi</th><th>Tarif</th><th>Sarf</th><th>Muddat</th><th>Holat</th><th /></tr></thead>
               <tbody>
-                {storeRows.length === 0 && <tr><td colSpan={6} className="muted">Hali do‘kon yo‘q.</td></tr>}
+                {storeRows.length === 0 && <tr><td colSpan={7} className="muted">Hali do‘kon yo‘q.</td></tr>}
                 {storeRows.map(({ store, plan, owner }) => {
-                  const limit = (plan?.monthlyMinutes ?? 0) * 60;
+                  const limit = plan?.monthlySeconds ?? 0;
+                  const isExpired = limit > 0 && isPlanExpired(store.periodStart, now);
                   return (
                     <tr key={store.id}>
                       <td>{store.name}</td>
-                      <td>{owner.phone ? maskPhone(owner.phone) : owner.email}</td>
+                      {/* Admins call shop owners, so the full number is shown here */}
+                      <td>{owner.phone ? <a className="console-link" href={`tel:${owner.phone}`}>{owner.phone}</a> : owner.email}</td>
                       <td>
                         <form action={updateStore} className="form-row">
                           <input type="hidden" name="id" value={store.id} />
@@ -112,7 +119,19 @@ export default async function AdminPage() {
                           <button className="btn btn-ghost btn-small" type="submit">Saqlash</button>
                         </form>
                       </td>
-                      <td>{minutes(store.usedSeconds)} / {limit ? minutes(limit) : '—'}</td>
+                      <td>
+                        {secs(store.usedSeconds)} / {limit ? secs(limit) : '—'}
+                        {store.extraSeconds > 0 && <div className="muted" style={{ fontSize: 13 }}>+ paket {secs(store.extraSeconds)}</div>}
+                      </td>
+                      <td>
+                        {limit === 0 ? (
+                          <span className="muted">—</span>
+                        ) : isExpired ? (
+                          <span className="badge badge-off">tugagan</span>
+                        ) : (
+                          planEndsAt(store.periodStart).toLocaleDateString('uz-UZ')
+                        )}
+                      </td>
                       <td><span className={store.status === 'active' ? 'badge badge-ok' : 'badge badge-off'}>{store.status === 'active' ? 'faol' : 'to‘xtatilgan'}</span></td>
                       <td>
                         <div className="form-row">
@@ -123,7 +142,9 @@ export default async function AdminPage() {
                           </form>
                           <form action={resetStoreUsage}>
                             <input type="hidden" name="id" value={store.id} />
-                            <button className="btn btn-ghost btn-small" type="submit">Yangi oy</button>
+                            <button className="btn btn-ghost btn-small" type="submit" title="Bugundan 30 kunlik yangi oy, sarf nolga tushadi">
+                              +30 kun
+                            </button>
                           </form>
                         </div>
                       </td>
@@ -139,29 +160,36 @@ export default async function AdminPage() {
           <h2>Tariflar</h2>
           <form action={createPlan} className="form-row" style={{ marginBottom: 16 }}>
             <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="Start" /></label>
-            <label className="field"><span>AI daqiqa / oy</span><input className="input" name="monthlyMinutes" type="number" min={1} required placeholder="100" /></label>
+            <label className="field"><span>AI soniya / 30 kun</span><input className="input" name="monthlySeconds" type="number" min={30} step={1} required placeholder="6000" /></label>
             <label className="field"><span>Narxi (so‘m / oy)</span><input className="input" name="priceUzs" type="number" min={0} required placeholder="1500000" /></label>
             <button className="btn" type="submit">Tarif qo‘shish</button>
           </form>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Tarif</th><th>AI daqiqa</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda (to‘liq sarflansa)</th><th>Holat</th><th /></tr></thead>
+              <thead><tr><th>Tarif</th><th>AI soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda (to‘liq sarflansa)</th><th>Tavsiya (×{markup})</th><th>Holat</th><th /></tr></thead>
               <tbody>
-                {plans.length === 0 && <tr><td colSpan={7} className="muted">Hali tarif yo‘q.</td></tr>}
+                {plans.length === 0 && <tr><td colSpan={8} className="muted">Hali tarif yo‘q.</td></tr>}
                 {plans.map((plan) => (
                   <tr key={plan.id}>
                     <td>{plan.name}</td>
-                    <td>{plan.monthlyMinutes}</td>
+                    <td>{plan.monthlySeconds.toLocaleString('uz-UZ')}</td>
                     <td>{som(plan.priceUzs)}</td>
-                    <td>{som(Math.round(plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate))} (${(plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND).toFixed(0)})</td>
-                    <td style={{ color: plan.priceUzs - plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>
-                      {som(Math.round(plan.priceUzs - plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate))}
+                    <td>{som(Math.round(costUzs(plan.monthlySeconds, rate)))}</td>
+                    <td style={{ color: plan.priceUzs >= costUzs(plan.monthlySeconds, rate) ? 'var(--c-ok)' : 'var(--c-danger)' }}>
+                      {som(Math.round(plan.priceUzs - costUzs(plan.monthlySeconds, rate)))} · {marginPercent(plan.priceUzs, costUzs(plan.monthlySeconds, rate))}%
                     </td>
+                    <td className="muted">{som(suggestedPriceUzs(plan.monthlySeconds, rate, markup))}</td>
                     <td><span className={plan.isActive ? 'badge badge-ok' : 'badge badge-off'}>{plan.isActive ? 'faol' : 'yopiq'}</span></td>
                     <td>
                       <form action={togglePlan}>
                         <input type="hidden" name="id" value={plan.id} />
-                        <button className="btn btn-ghost btn-small" type="submit">{plan.isActive ? 'Yopish' : 'Ochish'}</button>
+                        <button
+                          className="btn btn-ghost btn-small"
+                          type="submit"
+                          title={plan.isActive ? 'Sotuvdan olinadi; uni to‘lagan do‘konlar muddati tugaguncha ishlataveradi' : 'Yana sotuvga chiqadi'}
+                        >
+                          {plan.isActive ? 'Sotuvdan olish' : 'Sotuvga chiqarish'}
+                        </button>
                       </form>
                     </td>
                   </tr>
@@ -172,6 +200,7 @@ export default async function AdminPage() {
         </section>
 
         <PacksSettingsSection />
+        <CredentialsSection user={user} status={cred} />
       </main>
     </>
   );

@@ -134,15 +134,15 @@ export default function BusinessOnePagerPage() {
     <div className="one-pager-root">
       <style>{`
         .one-pager-root {
-          --ink: #170404;
+          --ink: #0b1726;
           --paper: #fffffc;
-          --muted: #6b5555;
-          --line: #17040418;
-          --accent: #c65a92;
-          --lav: #eae4f7;
-          --wash: #faf7f8;
-          --body: #4a3535;
-          font-family: 'Roobert', 'Inter', -apple-system, sans-serif;
+          --muted: #5d6877;
+          --line: #0b172618;
+          --accent: #2b62ff;
+          --lav: #e6ecfb;
+          --wash: #f6f8f7;
+          --body: #3b4756;
+          font-family: 'Onest', -apple-system, sans-serif;
           background: var(--paper);
           color: var(--ink);
           letter-spacing: -0.01em;
@@ -181,7 +181,7 @@ export default function BusinessOnePagerPage() {
         .one-pager-root .btn-primary { background: var(--ink); color: var(--paper); }
         .one-pager-root .btn-primary:hover { background: #000; }
         .one-pager-root .btn-secondary { background: transparent; color: var(--ink); }
-        .one-pager-root .btn-secondary:hover { background: #f7f2f4; }
+        .one-pager-root .btn-secondary:hover { background: #eef2f1; }
         .one-pager-root .btn-sm { height: 46px; min-width: 0; font-size: 15px; padding: 0 20px; }
 
         .one-pager-root .btn-stack {
@@ -211,17 +211,17 @@ export default function BusinessOnePagerPage() {
           gap: clamp(30px, 4.5vw, 60px); align-items: center;
         }
         .one-pager-root .hero h1 { font-size: clamp(38px, 4.7vw, 58px); font-weight: 500; letter-spacing: -0.04em; line-height: 0.99; }
-        .one-pager-root .hero .lede { font-size: clamp(17px, 1.5vw, 20px); max-width: 45ch; color: #3a2424; }
+        .one-pager-root .hero .lede { font-size: clamp(17px, 1.5vw, 20px); max-width: 45ch; color: #2a3644; }
 
         .one-pager-root .frame {
           border-radius: 18px; padding: clamp(16px, 2vw, 26px);
           background: var(--lav) url('/assets/a12-gradient.svg') center center / cover no-repeat;
           display: flex; justify-content: center;
         }
-        .one-pager-root .frame img { border-radius: 12px; box-shadow: 0 26px 70px -22px rgba(74,18,40,0.45), 0 8px 24px rgba(30,0,15,0.14); }
+        .one-pager-root .frame img { border-radius: 12px; box-shadow: 0 26px 70px -22px rgba(11, 23, 60,0.45), 0 8px 24px rgba(5, 12, 24,0.14); }
         .one-pager-root .frame-hero img { width: min(100%, 600px); }
         .one-pager-root .frame-shot { padding: 0; background: none; }
-        .one-pager-root .frame-shot img { width: min(100%, 800px); border-radius: 14px; box-shadow: 0 20px 56px -20px rgba(74,18,40,0.32); }
+        .one-pager-root .frame-shot img { width: min(100%, 800px); border-radius: 14px; box-shadow: 0 20px 56px -20px rgba(11, 23, 60,0.32); }
 
         .one-pager-root .shot { display: flex; flex-direction: column; gap: 10px; }
         .one-pager-root .shot-cap { font-size: 12.5px; color: var(--muted); letter-spacing: -0.01em; }
@@ -248,8 +248,8 @@ export default function BusinessOnePagerPage() {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 8px 13px; border-radius: 999px;
           background: rgba(255, 255, 252, 0.94); color: var(--ink);
-          border: 1px solid rgba(23, 4, 4, 0.14);
-          box-shadow: 0 6px 18px rgba(23, 4, 4, 0.16);
+          border: 1px solid rgba(11, 23, 38, 0.14);
+          box-shadow: 0 6px 18px rgba(11, 23, 38, 0.16);
           font-family: inherit; font-size: 13px; font-weight: 500;
           cursor: pointer; transition: transform 0.15s ease, background 0.15s ease;
         }
@@ -298,9 +298,9 @@ export default function BusinessOnePagerPage() {
         }
         .one-pager-root .track .cta-row { margin-top: auto; padding-top: 22px; }
         .one-pager-root .track.lead { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-        .one-pager-root .track.lead .track-tag { color: #f0a8cd; }
+        .one-pager-root .track.lead .track-tag { color: #7fd9cf; }
         .one-pager-root .track.lead p { color: rgba(255,255,252,0.74); }
-        .one-pager-root .track.lead p code { background: rgba(255,255,255,0.12); color: #f7eef2; }
+        .one-pager-root .track.lead p code { background: rgba(255,255,255,0.12); color: #eef3f8; }
         .one-pager-root .track.lead .snippet { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.16); }
         .one-pager-root .track.lead .copy-btn { color: var(--paper); border-color: rgba(255,255,255,0.32); }
         .one-pager-root .track.lead .copy-btn:hover { border-color: var(--paper); }
@@ -324,17 +324,17 @@ export default function BusinessOnePagerPage() {
         .one-pager-root .track p { font-size: 15px; color: var(--body); margin-top: 12px; }
         .one-pager-root .track p code {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          font-size: 0.86em; background: rgba(23,4,4,0.06); border-radius: 4px; padding: 2px 5px;
+          font-size: 0.86em; background: rgba(11, 23, 38,0.06); border-radius: 4px; padding: 2px 5px;
         }
         .one-pager-root .snippet {
           margin-top: 18px; border-radius: 10px; border: 0.5px solid var(--line);
-          background: #1c0a0a; padding: 15px 16px; max-width: 100%; overflow-x: auto;
+          background: #0b1726; padding: 15px 16px; max-width: 100%; overflow-x: auto;
         }
         .one-pager-root .snippet code {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          font-size: 12.5px; line-height: 1.65; color: #f4e9ee; white-space: pre-wrap; overflow-wrap: anywhere;
+          font-size: 12.5px; line-height: 1.65; color: #edf1f6; white-space: pre-wrap; overflow-wrap: anywhere;
         }
-        .one-pager-root .snippet .ca { color: #f0a8cd; }
+        .one-pager-root .snippet .ca { color: #7fd9cf; }
         .one-pager-root .snippet .cv { color: #b9e3c6; }
         .one-pager-root .snippet-foot { display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
         .one-pager-root .snippet-foot span { font-size: 12.5px; color: var(--muted); }
@@ -359,7 +359,7 @@ export default function BusinessOnePagerPage() {
         .one-pager-root .qa-a { padding: 0 2px 18px; font-size: 14.5px; line-height: 1.55; color: var(--body); max-width: 82ch; }
         .one-pager-root .qa-a code {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          font-size: 0.86em; background: rgba(23,4,4,0.06); border-radius: 4px; padding: 2px 5px;
+          font-size: 0.86em; background: rgba(11, 23, 38,0.06); border-radius: 4px; padding: 2px 5px;
         }
         .one-pager-root .qa-a p + p { margin-top: 10px; }
 
@@ -392,12 +392,12 @@ export default function BusinessOnePagerPage() {
           background: var(--paper); color: var(--ink);
           border: 0.5px solid var(--line); border-radius: 18px;
           padding: 28px 26px 26px;
-          box-shadow: 0 24px 70px rgba(40,10,25,0.35);
+          box-shadow: 0 24px 70px rgba(5, 15, 30,0.35);
         }
         .one-pager-root .sheet-close {
           position: absolute; top: 16px; right: 16px;
           width: 30px; height: 30px; border-radius: 50%;
-          border: 1px solid rgba(23,4,4,0.18); background: transparent; color: var(--ink);
+          border: 1px solid rgba(11, 23, 38,0.18); background: transparent; color: var(--ink);
           font-size: 16px; line-height: 1; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
         }
@@ -407,7 +407,7 @@ export default function BusinessOnePagerPage() {
         }
         .one-pager-root .wiz-dots { display: flex; align-items: center; gap: 7px; margin-bottom: 18px; }
         .one-pager-root .wiz-dots .d {
-          width: 7px; height: 7px; border-radius: 50%; background: rgba(23,4,4,0.16);
+          width: 7px; height: 7px; border-radius: 50%; background: rgba(11, 23, 38,0.16);
           transition: width 0.35s cubic-bezier(.16,1,.3,1), background 0.35s, border-radius 0.35s;
         }
         .one-pager-root .wiz-dots .d.active { width: 30px; border-radius: 4px; background: var(--ink); }
@@ -419,7 +419,7 @@ export default function BusinessOnePagerPage() {
         }
         .one-pager-root .url-row input {
           width: 100%; font-family: inherit; font-size: 15px; color: var(--ink);
-          background: var(--paper); border: 1px solid rgba(23,4,4,0.18); border-radius: 9px;
+          background: var(--paper); border: 1px solid rgba(11, 23, 38,0.18); border-radius: 9px;
           padding: 12px 14px;
         }
         .one-pager-root .sheet-cta { margin-top: 22px; }

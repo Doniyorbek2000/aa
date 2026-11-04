@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { GARMENT_TYPES, normaliseGarmentUrl, type GarmentType } from './garment';
@@ -16,9 +16,11 @@ interface GarmentBarProps {
   onPickGallery: () => void;
   onAddLink: (url: string) => void;
   onAiTryOn: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function GarmentBar({
+  style,
   garments,
   selected,
   garmentType,
@@ -50,7 +52,7 @@ export function GarmentBar({
   };
 
   return (
-    <View style={styles.panel}>
+    <View style={[styles.panel, style]}>
       <View style={styles.types} accessibilityRole="radiogroup">
         {GARMENT_TYPES.map((type) => {
           const isActive = type === garmentType;
@@ -62,7 +64,14 @@ export function GarmentBar({
               accessibilityState={{ checked: isActive }}
               style={[styles.chip, isActive && styles.chipActive]}
             >
-              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>{t.types[type]}</Text>
+              <Text
+                style={[styles.chipText, isActive && styles.chipTextActive]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {t.types[type]}
+              </Text>
             </Pressable>
           );
         })}
@@ -87,6 +96,11 @@ export function GarmentBar({
             style={[styles.thumb, uri === selected && styles.thumbSelected]}
           >
             <Image source={{ uri }} style={styles.thumbImage} contentFit="cover" transition={150} />
+            {uri === selected && (
+              <View style={styles.check}>
+                <Ionicons name="checkmark" size={12} color={p.onInk} />
+              </View>
+            )}
           </Pressable>
         ))}
       </ScrollView>
@@ -164,19 +178,31 @@ const THUMB = 64;
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     panel: { gap: 12, padding: 14, backgroundColor: p.paper, borderRadius: 20 },
-    types: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+    // Segmented control: three equal parts, so the row never wraps at large font sizes
+    types: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 999, backgroundColor: p.wash, borderWidth: StyleSheet.hairlineWidth, borderColor: p.line },
     chip: {
-      paddingHorizontal: 14,
-      minHeight: 36,
+      flex: 1,
+      paddingHorizontal: 8,
+      minHeight: 38,
       borderRadius: 999,
-      borderWidth: 1,
-      borderColor: p.line,
+      alignItems: 'center',
       justifyContent: 'center',
     },
-    chipActive: { backgroundColor: p.ink, borderColor: p.ink },
-    chipText: { color: p.ink, fontSize: 13, fontWeight: '500' },
+    chipActive: { backgroundColor: p.ink },
+    chipText: { color: p.body, fontSize: 13, fontWeight: '600' },
     chipTextActive: { color: p.onInk },
-    strip: { gap: 8 },
+    strip: { gap: 8, paddingRight: 4 },
+    check: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: p.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     thumb: {
       width: THUMB,
       height: THUMB * 1.25,

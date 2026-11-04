@@ -2,7 +2,7 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { getDb, schema } from '@/db';
 import { currentUser } from '@/lib/auth/session';
-import { BILLING_PERIOD_MS } from '@/lib/billing';
+import { isPlanExpired, planEndsAt } from '@/lib/billing';
 import { ConsoleHeader } from '../console-header';
 import { addGarment, deleteGarment, rotateWidgetKey, toggleGarment } from './actions';
 
@@ -51,9 +51,10 @@ export default async function DashboardPage() {
           </p>
         )}
         {rows.map(({ store, plan }) => {
-          const limit = (plan?.monthlyMinutes ?? 0) * 60;
+          const limit = plan?.monthlySeconds ?? 0;
           const usedPct = limit ? Math.min(100, Math.round((store.usedSeconds / limit) * 100)) : 0;
-          const renews = new Date(store.periodStart.getTime() + BILLING_PERIOD_MS).toLocaleDateString('uz-UZ');
+          const endsAt = planEndsAt(store.periodStart).toLocaleDateString('uz-UZ');
+          const isExpired = limit > 0 && isPlanExpired(store.periodStart, new Date());
           const snippet = `<script src="${SITE}/widget/latest/a12.js" data-store="${store.widgetKey}" defer></script>`;
           const items = garments.filter((garment) => garment.storeId === store.id);
           return (
@@ -61,15 +62,20 @@ export default async function DashboardPage() {
               <div className="card" style={{ display: 'grid', gap: 10 }}>
                 <h2>{store.name}</h2>
                 {store.status !== 'active' && <p className="error">Do‘kon vaqtincha to‘xtatilgan — AI kiyintirish bepul rejimda ishlaydi.</p>}
+                {isExpired && (
+                  <p className="error">
+                    Tarif muddati {endsAt} da tugagan. AI soniyalar to‘xtadi — davom ettirish uchun <a href="/dashboard/billing">tarifni to‘lang</a>.
+                  </p>
+                )}
                 <p>
                   Tarif: <b>{plan?.name ?? 'tanlanmagan'}</b>
-                  {limit > 0 && (
-                    <span className="muted"> · {Math.round(store.usedSeconds / 60)} / {plan?.monthlyMinutes} AI daqiqa · {renews} da yangilanadi</span>
+                  {limit > 0 && !isExpired && (
+                    <span className="muted"> · {store.usedSeconds.toLocaleString('uz-UZ')} / {limit.toLocaleString('uz-UZ')} AI soniya · {endsAt} gacha</span>
                   )}
                 </p>
-                {store.extraSeconds > 0 && <p>Qo‘shimcha paket: <b>{Math.floor(store.extraSeconds / 60)} AI daqiqa</b> <span className="muted">(oy o‘tsa ham yonmaydi)</span></p>}
-                {limit > 0 && <div className="bar" role="progressbar" aria-valuenow={usedPct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${usedPct}%` }} /></div>}
-                <p className="muted">Daqiqalar tugaganda mijozlaringiz uchun bepul kuzatish rejimi ishlashda davom etadi.</p>
+                {store.extraSeconds > 0 && <p>Qo‘shimcha paket: <b>{store.extraSeconds.toLocaleString('uz-UZ')} AI soniya</b> <span className="muted">(oy o‘tsa ham yonmaydi)</span></p>}
+                {limit > 0 && !isExpired && <div className="bar" role="progressbar" aria-valuenow={usedPct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${usedPct}%` }} /></div>}
+                <p className="muted">Soniyalar tugaganda mijozlaringiz uchun bepul kuzatish rejimi ishlashda davom etadi.</p>
               </div>
 
               <div className="card" style={{ display: 'grid', gap: 10 }}>

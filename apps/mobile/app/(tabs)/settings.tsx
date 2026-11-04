@@ -43,7 +43,7 @@ export default function ProfileTab() {
       },
     ]);
 
-  const leftMinutes = live ? Math.floor(live.secondsLeft / 60) : 0;
+  const leftSeconds = live ? Math.max(0, Math.floor(live.secondsLeft)) : 0;
   const leftShare = live && live.dailySeconds ? live.secondsLeft / live.dailySeconds : 0;
 
   return (
@@ -55,11 +55,17 @@ export default function ProfileTab() {
         <View style={styles.card}>
           <View style={[styles.row, styles.identity]}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{(profile.name ?? profile.phone ?? 'A').replace(/^\+/, '').slice(0, 1).toUpperCase()}</Text>
+              {profile.name ? (
+                <Text style={styles.avatarText}>{profile.name.slice(0, 1).toUpperCase()}</Text>
+              ) : (
+                <Ionicons name="person" size={22} color={p.onInk} />
+              )}
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowText}>{profile.name || t.nameLabel}</Text>
-              <Text style={styles.muted}>{profile.phone ?? profile.email}</Text>
+            <View style={styles.flex}>
+              <Text style={styles.identityName} numberOfLines={1}>
+                {profile.name || formatPhone(profile.phone) || profile.email}
+              </Text>
+              {profile.name ? <Text style={styles.muted}>{formatPhone(profile.phone) ?? profile.email}</Text> : null}
             </View>
           </View>
           <View style={[styles.rowBorder, styles.nameRow]}>
@@ -85,7 +91,7 @@ export default function ProfileTab() {
             <View style={[styles.rowBorder, styles.allowance]}>
               <View style={styles.allowanceHead}>
                 <Text style={styles.rowText}>{t.freeAiLeft}</Text>
-                <Text style={styles.rowText}>{leftMinutes} {t.minutesShort}</Text>
+                <Text style={styles.rowText}>{leftSeconds} {t.secondsShort}</Text>
               </View>
               <View style={styles.bar} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(leftShare * 100) }}>
                 <View style={[styles.barFill, { width: `${Math.round(leftShare * 100)}%` }]} />
@@ -143,6 +149,13 @@ export default function ProfileTab() {
   );
 }
 
+/** +998901234567 -> +998 90 123 45 67; other numbers are shown as stored. */
+function formatPhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const m = /^\+998(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(phone);
+  return m ? `+998 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : phone;
+}
+
 function LinkRow({ label, onPress, styles, p }: { label: string; onPress: () => void; styles: ReturnType<typeof makeStyles>; p: Palette }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="link" style={[styles.row, styles.rowBorder]}>
@@ -163,6 +176,8 @@ const makeStyles = (p: Palette) =>
     rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.line },
     rowText: { fontSize: 16, color: p.ink },
     muted: { fontSize: 13, color: p.muted, marginTop: 2 },
+    flex: { flex: 1 },
+    identityName: { fontSize: 17, fontWeight: '600', color: p.ink },
     identity: { gap: 12, justifyContent: 'flex-start', paddingVertical: 14 },
     avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: p.accent, alignItems: 'center', justifyContent: 'center' },
     avatarText: { color: p.onInk, fontSize: 20, fontWeight: '700' },

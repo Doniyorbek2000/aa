@@ -1,5 +1,5 @@
 /**
- * Live AI minutes per store: each session reserves its seconds from the store's monthly plan up
+ * Live AI seconds per store: each session reserves its seconds from the store's monthly plan up
  * front (the session cap). The write only lands if usedSeconds is unchanged since it was read,
  * so concurrent visitors cannot overspend a plan.
  */
@@ -11,6 +11,15 @@ export const BILLING_PERIOD_MS = 30 * 24 * 60 * 60_000;
 // Below this a session is too short to be worth starting
 export const MIN_SESSION_SECONDS = 30;
 const MAX_TRIES = 3;
+
+/** The day the paid month that started at periodStart ends. */
+export function planEndsAt(periodStart: Date): Date {
+  return new Date(periodStart.getTime() + BILLING_PERIOD_MS);
+}
+
+export function isPlanExpired(periodStart: Date, now: Date): boolean {
+  return now.getTime() >= planEndsAt(periodStart).getTime();
+}
 
 export type StoreCharge =
   | { ok: true; storeId: string; seconds: number }
@@ -27,13 +36,14 @@ export async function chargeStoreSession(db: AuthDb, widgetKey: string, wantSeco
     if (!row) return { ok: false, reason: 'unknown' };
     const { store, plan } = row;
     if (store.status !== 'active') return { ok: false, reason: 'paused' };
-    const planLimit = plan && plan.isActive ? plan.monthlyMinutes * 60 : 0;
+    // A plan the admin stopped selling still serves the shops that already paid for it
+    const planLimit = plan ? plan.monthlySeconds : 0;
     if (planLimit === 0 && store.extraSeconds === 0) return { ok: false, reason: 'no-plan' };
 
-    const isNewPeriod = now.getTime() - store.periodStart.getTime() >= BILLING_PERIOD_MS;
-    const used = isNewPeriod ? 0 : store.usedSeconds;
+    // A paid month lasts 30 days; only an approved payment (or the admin) starts the next one
+    const used = store.usedSeconds;
+    const planLeft = isPlanExpired(store.periodStart, now) ? 0 : Math.max(0, planLimit - used);
     // The monthly plan is spent first; bought top-up seconds only once it runs out
-    const planLeft = Math.max(0, planLimit - used);
     const remaining = planLeft + store.extraSeconds;
     if (remaining < MIN_SESSION_SECONDS) return { ok: false, reason: 'limit' };
     const seconds = Math.min(wantSeconds, remaining);
@@ -41,11 +51,7 @@ export async function chargeStoreSession(db: AuthDb, widgetKey: string, wantSeco
 
     const [saved] = await db
       .update(schema.stores)
-      .set({
-        usedSeconds: used + fromPlan,
-        extraSeconds: store.extraSeconds - (seconds - fromPlan),
-        ...(isNewPeriod ? { periodStart: now } : {}),
-      })
+      .set({ usedSeconds: used + fromPlan, extraSeconds: store.extraSeconds - (seconds - fromPlan) })
       .where(
         and(
           eq(schema.stores.id, store.id),

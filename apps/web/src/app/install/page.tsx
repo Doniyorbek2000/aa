@@ -85,15 +85,15 @@ export default function InstallWizardPage() {
     <div className="install-root">
       <style>{`
         .install-root {
-          --ink: #170404;
+          --ink: #0b1726;
           --paper: #fffffc;
-          --muted: #6b5555;
-          --line: #17040418;
-          --accent: #c65a92;
-          --lav: #eae4f7;
-          --wash: #faf7f8;
-          --body: #4a3535;
-          font-family: 'Roobert', 'Inter', -apple-system, sans-serif;
+          --muted: #5d6877;
+          --line: #0b172618;
+          --accent: #2b62ff;
+          --lav: #e6ecfb;
+          --wash: #f6f8f7;
+          --body: #3b4756;
+          font-family: 'Onest', -apple-system, sans-serif;
           background: var(--paper); color: var(--ink);
           letter-spacing: -0.01em;
           min-height: 100vh; display: flex; flex-direction: column;
@@ -120,7 +120,7 @@ export default function InstallWizardPage() {
         .install-root .btn-primary { background: var(--ink); color: var(--paper); }
         .install-root .btn-primary:hover { background: #000; }
         .install-root .btn-secondary { background: transparent; color: var(--ink); }
-        .install-root .btn-secondary:hover { background: #f7f2f4; }
+        .install-root .btn-secondary:hover { background: #eef2f1; }
         .install-root .btn-sm { height: 44px; min-width: 0; font-size: 15px; padding: 0 18px; }
 
         .install-root .topbar {
@@ -139,7 +139,7 @@ export default function InstallWizardPage() {
         }
         .install-root .hero .lede {
           font-size: clamp(15px, 1.25vw, 17px); line-height: 1.45; letter-spacing: -0.02em;
-          color: #3a2424; margin-top: 10px; max-width: 46ch;
+          color: #2a3644; margin-top: 10px; max-width: 46ch;
         }
         .install-root .hero .lede strong { font-weight: 500; color: var(--ink); }
 
@@ -162,7 +162,7 @@ export default function InstallWizardPage() {
           font-family: inherit; font-size: 13.5px; color: var(--body);
           text-decoration: underline; text-underline-offset: 3px;
         }
-        .install-root .wiz-bar { height: 3px; border-radius: 2px; background: rgba(23,4,4,0.08); overflow: hidden; margin-bottom: 20px; }
+        .install-root .wiz-bar { height: 3px; border-radius: 2px; background: rgba(11, 23, 38,0.08); overflow: hidden; margin-bottom: 20px; }
         .install-root .wiz-bar span {
           display: block; height: 100%; border-radius: 2px;
           background: var(--ink); transition: width 0.3s cubic-bezier(.16,1,.3,1);
@@ -183,7 +183,7 @@ export default function InstallWizardPage() {
           color: var(--ink); cursor: pointer; text-align: center;
           transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
-        .install-root .popt:hover { background: #f2eaee; }
+        .install-root .popt:hover { background: #edf1f6; }
         .install-root .popt.selected { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); background: var(--paper); }
 
         .install-root .wiz-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
@@ -196,7 +196,7 @@ export default function InstallWizardPage() {
         }
         .install-root .wiz-field input, .install-root .wiz-field select {
           width: 100%; font-family: inherit; font-size: 15px; color: var(--ink);
-          background: var(--paper); border: 1px solid rgba(23,4,4,0.18); border-radius: 9px;
+          background: var(--paper); border: 1px solid rgba(11, 23, 38,0.18); border-radius: 9px;
           padding: 11px 13px; outline: none;
         }
         .install-root .wiz-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
@@ -208,20 +208,20 @@ export default function InstallWizardPage() {
         .install-root .snippet-lead { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
         .install-root .mono {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          font-size: 0.86em; background: rgba(23,4,4,0.06); border-radius: 4px; padding: 2px 5px;
+          font-size: 0.86em; background: rgba(11, 23, 38,0.06); border-radius: 4px; padding: 2px 5px;
         }
         .install-root .snippet {
           margin-top: 14px; border-radius: 10px; border: 0.5px solid var(--line);
-          background: #1c0a0a; padding: 14px 15px; max-width: 100%; overflow-x: auto;
+          background: #0b1726; padding: 14px 15px; max-width: 100%; overflow-x: auto;
         }
         .install-root .snippet code {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          font-size: 12.5px; line-height: 1.65; color: #f4e9ee; white-space: pre-wrap; overflow-wrap: anywhere;
+          font-size: 12.5px; line-height: 1.65; color: #edf1f6; white-space: pre-wrap; overflow-wrap: anywhere;
         }
-        .install-root .snippet .ct { color: #c99ab0; }
-        .install-root .snippet .ca { color: #f0a8cd; }
+        .install-root .snippet .ct { color: #9fb3c8; }
+        .install-root .snippet .ca { color: #7fd9cf; }
         .install-root .snippet .cv { color: #b9e3c6; }
-        .install-root .snippet .ck { color: #cbb6ee; }
+        .install-root .snippet .ck { color: #b9cdf5; }
         .install-root .snippet-foot { display: flex; align-items: center; gap: 12px; margin-top: 11px; flex-wrap: wrap; }
         .install-root .snippet-foot span { font-size: 12.5px; color: var(--muted); }
         .install-root .copy-btn {
@@ -242,7 +242,7 @@ export default function InstallWizardPage() {
         .install-root .below-in { max-width: 600px; margin-inline: auto; }
         .install-root .below-row { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; }
         .install-root .beta-line { font-size: 12.5px; color: var(--muted); opacity: 0.8; }
-        .install-root .beta-line::before { content: '·'; margin-right: 12px; color: rgba(23,4,4,0.28); }
+        .install-root .beta-line::before { content: '·'; margin-right: 12px; color: rgba(11, 23, 38,0.28); }
         .install-root .faq-trigger {
           background: none; border: none; padding: 0; cursor: pointer;
           font-family: inherit; font-size: 13.5px; color: var(--body);

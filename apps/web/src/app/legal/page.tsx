@@ -12,14 +12,14 @@ export default function LegalPage() {
     <div className="vto-legal-root">
       <style>{`
         .vto-legal-root {
-          --ink: #170404;
+          --ink: #0b1726;
           --paper: #fffffc;
-          --muted: #6b5555;
-          --line: #17040418;
-          --accent: #c65a92;
-          --wash: #faf7f8;
-          --body: #4a3535;
-          font-family: 'Roobert', 'Inter', -apple-system, sans-serif;
+          --muted: #5d6877;
+          --line: #0b172618;
+          --accent: #2b62ff;
+          --wash: #f6f8f7;
+          --body: #3b4756;
+          font-family: 'Onest', -apple-system, sans-serif;
           background: var(--paper); color: var(--ink);
           letter-spacing: -0.01em; min-height: 100vh;
         }
