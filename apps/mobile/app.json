@@ -70,7 +70,8 @@
           "isAccessMediaLocationEnabled": false
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-iap"
     ],
     "extra": {
       "apiUrl": "https://a12.uz"

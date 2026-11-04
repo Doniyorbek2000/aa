@@ -43,6 +43,13 @@
       "when": 1793790358455,
       "tag": "0005_user_balance",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793791566899,
+      "tag": "0006_iap_purchases",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { boolean, customType, index, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, customType, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({ dataType: () => 'bytea' });
 
@@ -187,4 +187,24 @@ export const liveSessions = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('live_sessions_store_idx').on(t.storeId, t.createdAt)]
+);
+
+/**
+ * In-app purchases already credited (App Store or Google Play). The store and its transaction id
+ * are unique together, so replaying the same purchase never adds the seconds twice.
+ */
+export const iapPurchases = pgTable(
+  'iap_purchases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    store: text('store').notNull(),
+    transactionId: text('transaction_id').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    productId: text('product_id').notNull(),
+    seconds: integer('seconds').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('iap_purchases_store_tx_idx').on(t.store, t.transactionId)]
 );

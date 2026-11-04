@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAccount } from '../../src/account';
+import { useSecondsStore } from '../../src/iap';
 import { API_BASE } from '../../src/api';
 import { LOCALE_NAMES, LOCALES } from '../../src/copy';
 import { useI18n } from '../../src/i18n';
@@ -17,7 +18,8 @@ export default function ProfileTab() {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
   const insets = useSafeAreaInsets();
-  const { profile, live, refresh, signOut, updateName, deleteAccount } = useAccount();
+  const { token, profile, live, refresh, signOut, updateName, deleteAccount } = useAccount();
+  const store = useSecondsStore(profile ? token : null, refresh);
   const [name, setName] = useState(profile?.name ?? '');
   const open = (path: string) => void WebBrowser.openBrowserAsync(`${API_BASE}${path}`).catch(() => {});
 
@@ -119,6 +121,36 @@ export default function ProfileTab() {
         </View>
       )}
 
+      {profile && store.products.length > 0 && (
+        <>
+          <Text style={styles.section}>{t.buySeconds}</Text>
+          <View style={styles.card}>
+            {store.products.map((product, i) => (
+              <View key={product.id} style={[styles.row, i > 0 && styles.rowBorder]}>
+                <View style={styles.flex}>
+                  <Text style={styles.rowText}>{product.seconds.toLocaleString()} {t.secondsShort}</Text>
+                  <Text style={styles.muted}>≈ {Math.floor(product.seconds / 60)} {t.minutesApprox}</Text>
+                </View>
+                <Pressable
+                  style={[styles.smallBtn, store.state === 'buying' && styles.disabled]}
+                  disabled={store.state === 'buying'}
+                  onPress={() => void store.buy(product.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${product.seconds} ${t.secondsShort}, ${product.price}`}
+                >
+                  <Text style={styles.smallBtnText}>{product.price}</Text>
+                </Pressable>
+              </View>
+            ))}
+            {store.state !== 'idle' && store.state !== 'buying' && (
+              <Text style={[styles.muted, styles.buyNote]} accessibilityLiveRegion="polite">
+                {store.state === 'done' ? t.purchaseDone : store.state === 'pending' ? t.purchasePending : t.purchaseFailed}
+              </Text>
+            )}
+          </View>
+        </>
+      )}
+
       <Text style={styles.section}>{t.language}</Text>
       <View style={styles.card} accessibilityRole="radiogroup">
         {LOCALES.map((code, i) => (
@@ -196,6 +228,7 @@ const makeStyles = (p: Palette) =>
     allowance: { paddingVertical: 12, gap: 8 },
     allowanceHead: { flexDirection: 'row', justifyContent: 'space-between' },
     balanceValue: { fontWeight: '700', color: p.accent },
+    buyNote: { paddingBottom: 12 },
     bar: { height: 8, borderRadius: 4, backgroundColor: p.line, overflow: 'hidden' },
     barFill: { height: 8, borderRadius: 4, backgroundColor: p.accent },
     signedOut: { paddingVertical: 16, gap: 12 },
