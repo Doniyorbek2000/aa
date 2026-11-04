@@ -22,7 +22,7 @@ async function setup(overrides: Partial<typeof schema.stores.$inferInsert> = {})
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: path.join(import.meta.dirname, '../../drizzle') });
   const [owner] = await db.insert(schema.users).values({ phone: '+998901234567' }).returning();
-  const [plan] = await db.insert(schema.plans).values({ name: 'Test', monthlyMinutes: 5, priceUzs: 1 }).returning();
+  const [plan] = await db.insert(schema.plans).values({ name: 'Test', monthlySeconds: 300, priceUzs: 1 }).returning();
   assert.ok(owner && plan);
   const [store] = await db
     .insert(schema.stores)

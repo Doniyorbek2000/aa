@@ -18,7 +18,7 @@ const MONTH_MS = 30 * 24 * 60 * 60_000;
 const DAY_MS = 24 * 60 * 60_000;
 
 const som = (value: number) => `${value.toLocaleString('uz-UZ')} so‘m`;
-const minutes = (seconds: number) => `${Math.round(seconds / 60)} daq`;
+const secs = (seconds: number) => `${Math.round(seconds).toLocaleString("uz-UZ")} s`;
 
 async function loadAdminData() {
   const db = getDb();
@@ -36,7 +36,7 @@ async function loadAdminData() {
       .select({ seconds: sum(schema.videoJobs.planSeconds) })
       .from(schema.videoJobs)
       .where(and(gte(schema.videoJobs.createdAt, since(MONTH_MS)), ne(schema.videoJobs.status, 'failed'))),
-    db.select().from(schema.plans).orderBy(schema.plans.monthlyMinutes),
+    db.select().from(schema.plans).orderBy(schema.plans.monthlySeconds),
     db
       .select({ store: schema.stores, plan: schema.plans, owner: schema.users })
       .from(schema.stores)
@@ -72,7 +72,7 @@ export default async function AdminPage() {
           <div className="stat"><b>{stats.stores}</b><span>do‘kon</span></div>
           <div className="stat"><b>{stats.today}</b><span>AI sessiya (bugun)</span></div>
           <div className="stat"><b>{stats.month}</b><span>AI sessiya (30 kun)</span></div>
-          <div className="stat"><b>{minutes(stats.monthSeconds)}</b><span>AI vaqt (30 kun)</span></div>
+          <div className="stat"><b>{secs(stats.monthSeconds)}</b><span>AI vaqt (30 kun)</span></div>
         </section>
 
         <FinanceSection />
@@ -98,7 +98,7 @@ export default async function AdminPage() {
               <tbody>
                 {storeRows.length === 0 && <tr><td colSpan={7} className="muted">Hali do‘kon yo‘q.</td></tr>}
                 {storeRows.map(({ store, plan, owner }) => {
-                  const limit = (plan?.monthlyMinutes ?? 0) * 60;
+                  const limit = plan?.monthlySeconds ?? 0;
                   const isExpired = limit > 0 && isPlanExpired(store.periodStart, now);
                   return (
                     <tr key={store.id}>
@@ -116,8 +116,8 @@ export default async function AdminPage() {
                         </form>
                       </td>
                       <td>
-                        {minutes(store.usedSeconds)} / {limit ? minutes(limit) : '—'}
-                        {store.extraSeconds > 0 && <div className="muted" style={{ fontSize: 13 }}>+ paket {minutes(store.extraSeconds)}</div>}
+                        {secs(store.usedSeconds)} / {limit ? secs(limit) : '—'}
+                        {store.extraSeconds > 0 && <div className="muted" style={{ fontSize: 13 }}>+ paket {secs(store.extraSeconds)}</div>}
                       </td>
                       <td>
                         {limit === 0 ? (
@@ -156,23 +156,23 @@ export default async function AdminPage() {
           <h2>Tariflar</h2>
           <form action={createPlan} className="form-row" style={{ marginBottom: 16 }}>
             <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="Start" /></label>
-            <label className="field"><span>AI daqiqa / oy</span><input className="input" name="monthlyMinutes" type="number" min={1} required placeholder="100" /></label>
+            <label className="field"><span>AI soniya / 30 kun</span><input className="input" name="monthlySeconds" type="number" min={30} step={1} required placeholder="6000" /></label>
             <label className="field"><span>Narxi (so‘m / oy)</span><input className="input" name="priceUzs" type="number" min={0} required placeholder="1500000" /></label>
             <button className="btn" type="submit">Tarif qo‘shish</button>
           </form>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Tarif</th><th>AI daqiqa</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda (to‘liq sarflansa)</th><th>Holat</th><th /></tr></thead>
+              <thead><tr><th>Tarif</th><th>AI soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda (to‘liq sarflansa)</th><th>Holat</th><th /></tr></thead>
               <tbody>
                 {plans.length === 0 && <tr><td colSpan={7} className="muted">Hali tarif yo‘q.</td></tr>}
                 {plans.map((plan) => (
                   <tr key={plan.id}>
                     <td>{plan.name}</td>
-                    <td>{plan.monthlyMinutes}</td>
+                    <td>{plan.monthlySeconds.toLocaleString('uz-UZ')}</td>
                     <td>{som(plan.priceUzs)}</td>
-                    <td>{som(Math.round(plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate))} (${(plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND).toFixed(0)})</td>
-                    <td style={{ color: plan.priceUzs - plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>
-                      {som(Math.round(plan.priceUzs - plan.monthlyMinutes * 60 * USD_PER_LIVE_SECOND * rate))}
+                    <td>{som(Math.round(plan.monthlySeconds * USD_PER_LIVE_SECOND * rate))} (${(plan.monthlySeconds * USD_PER_LIVE_SECOND).toFixed(0)})</td>
+                    <td style={{ color: plan.priceUzs - plan.monthlySeconds * USD_PER_LIVE_SECOND * rate >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>
+                      {som(Math.round(plan.priceUzs - plan.monthlySeconds * USD_PER_LIVE_SECOND * rate))}
                     </td>
                     <td><span className={plan.isActive ? 'badge badge-ok' : 'badge badge-off'}>{plan.isActive ? 'faol' : 'yopiq'}</span></td>
                     <td>

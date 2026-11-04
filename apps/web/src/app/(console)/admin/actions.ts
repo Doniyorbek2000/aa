@@ -23,10 +23,10 @@ const done = () => revalidatePath('/admin');
 export async function createPlan(form: FormData) {
   await requireAdmin();
   const name = text(form, 'name', 40);
-  const monthlyMinutes = int(form, 'monthlyMinutes', 1, 100_000);
+  const monthlySeconds = int(form, 'monthlySeconds', 30, 6_000_000);
   const priceUzs = int(form, 'priceUzs', 0, 1_000_000_000);
-  if (!name || monthlyMinutes === null || priceUzs === null) return;
-  await getDb().insert(schema.plans).values({ name, monthlyMinutes, priceUzs });
+  if (!name || monthlySeconds === null || priceUzs === null) return;
+  await getDb().insert(schema.plans).values({ name, monthlySeconds, priceUzs });
   done();
 }
 
@@ -70,10 +70,10 @@ export async function updateStore(form: FormData) {
 export async function createPack(form: FormData) {
   await requireAdmin();
   const name = text(form, 'name', 40);
-  const minutes = int(form, 'minutes', 1, 100_000);
+  const seconds = int(form, 'seconds', 30, 6_000_000);
   const priceUzs = int(form, 'priceUzs', 0, 1_000_000_000);
-  if (!name || minutes === null || priceUzs === null) return;
-  await getDb().insert(schema.packs).values({ name, minutes, priceUzs });
+  if (!name || seconds === null || priceUzs === null) return;
+  await getDb().insert(schema.packs).values({ name, seconds, priceUzs });
   done();
 }
 

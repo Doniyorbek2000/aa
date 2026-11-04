@@ -38,7 +38,7 @@ export default async function BillingPage() {
         <div style={{ display: 'grid', gap: 6 }}>
           <Link href="/dashboard" className="console-link" style={{ justifySelf: 'start', padding: 0 }}>← Do‘konim</Link>
           <h1>Tarif va to‘lov</h1>
-          <p className="muted">Tarif yoki qo‘shimcha daqiqalar paketini tanlang, kartaga o‘tkazing va chekni yuboring. Tekshirilgach daqiqalar avtomatik qo‘shiladi.</p>
+          <p className="muted">Tarif yoki qo‘shimcha soniyalar paketini tanlang, kartaga o‘tkazing va chekni yuboring. Tekshirilgach soniyalar avtomatik qo‘shiladi.</p>
         </div>
         {stores.length === 0 ? (
           <p className="notice">To‘lov do‘kon ulangandan keyin ochiladi.</p>
@@ -48,8 +48,8 @@ export default async function BillingPage() {
           <PayForm
             stores={stores}
             items={[
-              ...plans.map((plan) => ({ kind: 'plan' as const, id: plan.id, name: plan.name, minutes: plan.monthlyMinutes, priceUzs: plan.priceUzs })),
-              ...packs.map((pack) => ({ kind: 'pack' as const, id: pack.id, name: pack.name, minutes: pack.minutes, priceUzs: pack.priceUzs })),
+              ...plans.map((plan) => ({ kind: 'plan' as const, id: plan.id, name: plan.name, seconds: plan.monthlySeconds, priceUzs: plan.priceUzs })),
+              ...packs.map((pack) => ({ kind: 'pack' as const, id: pack.id, name: pack.name, seconds: pack.seconds, priceUzs: pack.priceUzs })),
             ]}
             card={{ number: formatCard(settings.cardNumber), holder: settings.cardHolder, bank: settings.bankName }}
           />

@@ -2,39 +2,39 @@ import { getDb, schema } from '@/db';
 import { formatCard, getSettings, usdRate } from '@/lib/payments';
 import { createPack, savePaymentSettings, togglePack } from './actions';
 
-const USD_PER_MINUTE = 0.02 * 60;
+const USD_PER_SECOND = 0.02;
 const som = (value: number) => `${Math.round(value).toLocaleString('uz-UZ')} so‘m`;
 
 /** Top-up packs with their Decart cost and margin, and the card shops pay to. */
 export async function PacksSettingsSection() {
   const db = getDb();
-  const [packs, settings] = await Promise.all([db.select().from(schema.packs).orderBy(schema.packs.minutes), getSettings(db)]);
+  const [packs, settings] = await Promise.all([db.select().from(schema.packs).orderBy(schema.packs.seconds), getSettings(db)]);
   const rate = usdRate(settings);
 
   return (
     <>
       <section className="card">
-        <h2>Qo‘shimcha daqiqa paketlari</h2>
+        <h2>Qo‘shimcha soniya paketlari</h2>
         <form action={createPack} className="form-row" style={{ marginBottom: 16 }}>
-          <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="+60 daqiqa" /></label>
-          <label className="field"><span>AI daqiqa</span><input className="input" name="minutes" type="number" min={1} required placeholder="60" /></label>
+          <label className="field"><span>Nomi</span><input className="input" name="name" required maxLength={40} placeholder="+600 soniya" /></label>
+          <label className="field"><span>AI soniya</span><input className="input" name="seconds" type="number" min={30} step={1} required placeholder="600" /></label>
           <label className="field"><span>Narxi (so‘m)</span><input className="input" name="priceUzs" type="number" min={0} required placeholder="1200000" /></label>
           <button className="btn" type="submit">Paket qo‘shish</button>
         </form>
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Paket</th><th>Daqiqa</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda</th><th>Holat</th><th /></tr></thead>
+            <thead><tr><th>Paket</th><th>Soniya</th><th>Narx</th><th>Decart tannarxi</th><th>Foyda</th><th>Holat</th><th /></tr></thead>
             <tbody>
               {packs.length === 0 && <tr><td colSpan={7} className="muted">Hali paket yo‘q.</td></tr>}
               {packs.map((pack) => {
-                const cost = pack.minutes * USD_PER_MINUTE * rate;
+                const cost = pack.seconds * USD_PER_SECOND * rate;
                 const margin = pack.priceUzs ? Math.round(((pack.priceUzs - cost) / pack.priceUzs) * 100) : 0;
                 return (
                   <tr key={pack.id}>
                     <td>{pack.name}</td>
-                    <td>{pack.minutes}</td>
+                    <td>{pack.seconds.toLocaleString('uz-UZ')}</td>
                     <td>{som(pack.priceUzs)}</td>
-                    <td>{som(cost)} (${(pack.minutes * USD_PER_MINUTE).toFixed(0)})</td>
+                    <td>{som(cost)} (${(pack.seconds * USD_PER_SECOND).toFixed(2)})</td>
                     <td style={{ color: margin >= 0 ? 'var(--c-ok)' : 'var(--c-danger)' }}>{som(pack.priceUzs - cost)} · {margin}%</td>
                     <td><span className={pack.isActive ? 'badge badge-ok' : 'badge badge-off'}>{pack.isActive ? 'sotuvda' : 'yopiq'}</span></td>
                     <td>

@@ -40,11 +40,11 @@ export const otpCodes = pgTable('otp_codes', {
   createdAt: createdAt(),
 });
 
-/** Monthly store plans: live AI minutes included and the price in so'm. */
+/** Monthly store plans: live AI seconds included and the price in so'm. */
 export const plans = pgTable('plans', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  monthlyMinutes: integer('monthly_minutes').notNull(),
+  monthlySeconds: integer('monthly_seconds').notNull(),
   priceUzs: integer('price_uzs').notNull(),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: createdAt(),
@@ -70,11 +70,11 @@ export const stores = pgTable('stores', {
   createdAt: createdAt(),
 });
 
-/** One-off top-ups of live AI minutes a shop can buy on top of its plan. */
+/** One-off top-ups of live AI seconds a shop can buy on top of its plan. */
 export const packs = pgTable('packs', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  minutes: integer('minutes').notNull(),
+  seconds: integer('seconds').notNull(),
   priceUzs: integer('price_uzs').notNull(),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: createdAt(),
@@ -85,7 +85,7 @@ export const paymentStatus = pgEnum('payment_status', ['pending', 'approved', 'r
 
 /**
  * A shop's card transfer for a plan or a pack, with the receipt it uploaded. An admin checks
- * the transfer and approves it, which grants the minutes.
+ * the transfer and approves it, which grants the seconds.
  */
 export const payments = pgTable(
   'payments',
@@ -102,7 +102,7 @@ export const payments = pgTable(
     packId: uuid('pack_id').references(() => packs.id, { onDelete: 'set null' }),
     /** What was bought, copied at the time so later price edits do not rewrite history. */
     title: text('title').notNull(),
-    minutes: integer('minutes').notNull(),
+    seconds: integer('seconds').notNull(),
     amountUzs: integer('amount_uzs').notNull(),
     receipt: bytea('receipt').notNull(),
     receiptType: text('receipt_type').notNull(),

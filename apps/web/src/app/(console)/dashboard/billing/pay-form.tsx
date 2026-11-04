@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-type Item = { kind: 'plan' | 'pack'; id: string; name: string; minutes: number; priceUzs: number };
+type Item = { kind: 'plan' | 'pack'; id: string; name: string; seconds: number; priceUzs: number };
 type Props = { stores: { id: string; name: string }[]; items: Item[]; card: { number: string; holder: string; bank: string } };
 
 const som = (value: number) => `${value.toLocaleString('uz-UZ')} so‘m`;
@@ -35,7 +35,7 @@ export function PayForm({ stores, items, card }: Props) {
       const res = await fetch('/api/payments', { method: 'POST', body: form });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok) {
-        setMessage({ ok: true, text: 'Chek yuborildi. Tekshirilgach daqiqalar qo‘shiladi — odatda bir necha soat ichida.' });
+        setMessage({ ok: true, text: 'Chek yuborildi. Tekshirilgach soniyalar qo‘shiladi — odatda bir necha soat ichida.' });
         setReceipt(null);
         setTimeout(() => window.location.reload(), 1500);
       } else {
@@ -69,7 +69,7 @@ export function PayForm({ stores, items, card }: Props) {
                 <input type="radio" name="item" value={value} checked={isOn} onChange={() => setChoice(value)} style={{ position: 'absolute', opacity: 0 }} />
                 <span>{item.kind === 'plan' ? 'Oylik tarif' : 'Qo‘shimcha paket'}</span>
                 <b>{item.name}</b>
-                <span>{item.minutes} AI daqiqa{item.kind === 'plan' ? ' / oy' : ''}</span>
+                <span>{item.seconds.toLocaleString('uz-UZ')} AI soniya{item.kind === 'plan' ? ' / 30 kun' : ''}</span>
                 <b style={{ fontSize: 18, marginTop: 6 }}>{som(item.priceUzs)}</b>
               </label>
             );

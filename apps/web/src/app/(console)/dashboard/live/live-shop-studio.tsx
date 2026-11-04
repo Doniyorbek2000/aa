@@ -11,7 +11,7 @@ const STATUS: Record<DecartLiveState, string> = {
   off: 'Efir boshlanmagan',
   connecting: 'AI ulanmoqda…',
   live: 'AI efirda',
-  unavailable: 'AI to‘xtadi (daqiqalar tugagan yoki aloqa uzildi)',
+  unavailable: 'AI to‘xtadi (soniyalar tugagan yoki aloqa uzildi)',
 };
 
 /** Same-origin copy of a store image, so the browser may read its pixels for the AI. */

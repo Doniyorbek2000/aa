@@ -51,7 +51,7 @@ export default async function DashboardPage() {
           </p>
         )}
         {rows.map(({ store, plan }) => {
-          const limit = (plan?.monthlyMinutes ?? 0) * 60;
+          const limit = plan?.monthlySeconds ?? 0;
           const usedPct = limit ? Math.min(100, Math.round((store.usedSeconds / limit) * 100)) : 0;
           const endsAt = planEndsAt(store.periodStart).toLocaleDateString('uz-UZ');
           const isExpired = limit > 0 && isPlanExpired(store.periodStart, new Date());
@@ -64,18 +64,18 @@ export default async function DashboardPage() {
                 {store.status !== 'active' && <p className="error">Do‘kon vaqtincha to‘xtatilgan — AI kiyintirish bepul rejimda ishlaydi.</p>}
                 {isExpired && (
                   <p className="error">
-                    Tarif muddati {endsAt} da tugagan. AI daqiqalar to‘xtadi — davom ettirish uchun <a href="/dashboard/billing">tarifni to‘lang</a>.
+                    Tarif muddati {endsAt} da tugagan. AI soniyalar to‘xtadi — davom ettirish uchun <a href="/dashboard/billing">tarifni to‘lang</a>.
                   </p>
                 )}
                 <p>
                   Tarif: <b>{plan?.name ?? 'tanlanmagan'}</b>
                   {limit > 0 && !isExpired && (
-                    <span className="muted"> · {Math.round(store.usedSeconds / 60)} / {plan?.monthlyMinutes} AI daqiqa · {endsAt} gacha</span>
+                    <span className="muted"> · {store.usedSeconds.toLocaleString('uz-UZ')} / {limit.toLocaleString('uz-UZ')} AI soniya · {endsAt} gacha</span>
                   )}
                 </p>
-                {store.extraSeconds > 0 && <p>Qo‘shimcha paket: <b>{Math.floor(store.extraSeconds / 60)} AI daqiqa</b> <span className="muted">(oy o‘tsa ham yonmaydi)</span></p>}
+                {store.extraSeconds > 0 && <p>Qo‘shimcha paket: <b>{store.extraSeconds.toLocaleString('uz-UZ')} AI soniya</b> <span className="muted">(oy o‘tsa ham yonmaydi)</span></p>}
                 {limit > 0 && !isExpired && <div className="bar" role="progressbar" aria-valuenow={usedPct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${usedPct}%` }} /></div>}
-                <p className="muted">Daqiqalar tugaganda mijozlaringiz uchun bepul kuzatish rejimi ishlashda davom etadi.</p>
+                <p className="muted">Soniyalar tugaganda mijozlaringiz uchun bepul kuzatish rejimi ishlashda davom etadi.</p>
               </div>
 
               <div className="card" style={{ display: 'grid', gap: 10 }}>

@@ -1,5 +1,6 @@
 import { and, count, eq, gte, ne, sum } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
+import { maxSessionSeconds } from '@/lib/decart';
 import { decartCredits, USD_PER_CREDIT } from '@/lib/decart-account';
 import { getSettings, usdRate } from '@/lib/payments';
 
@@ -34,7 +35,8 @@ export async function FinanceSection() {
   const costUsd = (Number(live30?.s ?? 0) + Number(video30?.s ?? 0)) * USD_PER_PLAN_SECOND;
   const costUzs = costUsd * rate;
   const balanceUsd = credits === null ? null : credits * USD_PER_CREDIT;
-  const balanceMinutes = balanceUsd === null ? null : Math.floor(balanceUsd / USD_PER_PLAN_SECOND / 60);
+  const balanceSeconds = balanceUsd === null ? null : Math.floor(balanceUsd / USD_PER_PLAN_SECOND);
+  const sessionSeconds = maxSessionSeconds(process.env.DECART_MAX_SESSION_SECONDS);
 
   return (
     <section className="card" style={{ display: 'grid', gap: 12 }}>
@@ -49,13 +51,17 @@ export async function FinanceSection() {
         <div className="stat"><b>{som(Number(paidAll?.uzs ?? 0))}</b><span>jami tushum (hamma vaqt)</span></div>
         <div className="stat">
           <b>{balanceUsd === null ? '—' : `$${balanceUsd.toFixed(2)}`}</b>
-          <span>{balanceMinutes === null ? 'Decart balansi olinmadi' : `Decart balansi · ≈ ${balanceMinutes} AI daqiqa`}</span>
+          <span>
+            {balanceSeconds === null
+              ? 'Decart balansi olinmadi'
+              : `Decart balansi (${credits} kredit) ≈ ${som((balanceUsd ?? 0) * rate)} · ≈ ${balanceSeconds.toLocaleString('uz-UZ')} AI soniya · ≈ ${Math.floor(balanceSeconds / sessionSeconds)} ta ${sessionSeconds} s sessiya`}
+          </span>
         </div>
         <div className="stat"><b>{pending?.n ?? 0}</b><span>tekshirilishi kerak bo‘lgan chek</span></div>
       </div>
       <p className="muted" style={{ fontSize: 13 }}>
         Kurs: 1 $ = {rate.toLocaleString('uz-UZ')} so‘m. Xarajat har sessiyaga ajratilgan soniyalar bo‘yicha (yuqori chegara); aniq sarf — Decart balansi.
-        {balanceMinutes !== null && balanceMinutes < 60 && <b className="error"> Decart balansi kam — to‘ldiring: platform.decart.ai → Billing.</b>}
+        {balanceSeconds !== null && balanceSeconds < 3600 && <b className="error"> Decart balansi kam — to‘ldiring: platform.decart.ai → Billing.</b>}
       </p>
     </section>
   );

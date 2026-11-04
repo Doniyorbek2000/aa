@@ -39,7 +39,7 @@ export function formatCard(raw: string): string {
 /**
  * Approves a pending payment and grants what it bought. The pending→approved flip is the guard:
  * a second click (or a second admin) finds nothing pending and grants nothing. One transaction,
- * so a payment is never marked approved without its minutes being granted.
+ * so a payment is never marked approved without its seconds being granted.
  */
 export async function approvePayment(db: AuthDb, paymentId: string, now: Date): Promise<boolean> {
   return db.transaction(async (tx) => {
@@ -59,7 +59,7 @@ export async function approvePayment(db: AuthDb, paymentId: string, now: Date): 
       // Concurrent live sessions may be spending top-ups, so add with SQL, not a read-modify-write
       await tx
         .update(schema.stores)
-        .set({ extraSeconds: sql`${schema.stores.extraSeconds} + ${payment.minutes * 60}` })
+        .set({ extraSeconds: sql`${schema.stores.extraSeconds} + ${payment.seconds}` })
         .where(eq(schema.stores.id, payment.storeId));
     }
     return true;

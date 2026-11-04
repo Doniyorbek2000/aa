@@ -22,7 +22,7 @@ async function setup() {
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: path.join(import.meta.dirname, '../../drizzle') });
   const [owner] = await db.insert(schema.users).values({ phone: '+998901234567' }).returning();
-  const [plan] = await db.insert(schema.plans).values({ name: 'Biznes', monthlyMinutes: 500, priceUzs: 5_000_000 }).returning();
+  const [plan] = await db.insert(schema.plans).values({ name: 'Biznes', monthlySeconds: 30_000, priceUzs: 5_000_000 }).returning();
   assert.ok(owner && plan);
   const [store] = await db
     .insert(schema.stores)
@@ -32,7 +32,7 @@ async function setup() {
   const pay = async (values: Partial<typeof schema.payments.$inferInsert>) => {
     const [row] = await db
       .insert(schema.payments)
-      .values({ storeId: store.id, userId: owner.id, kind: 'pack', title: 'x', minutes: 10, amountUzs: 100_000, receipt: new Uint8Array([1, 2]), receiptType: 'image/png', ...values })
+      .values({ storeId: store.id, userId: owner.id, kind: 'pack', title: 'x', seconds: 600, amountUzs: 100_000, receipt: new Uint8Array([1, 2]), receiptType: 'image/png', ...values })
       .returning();
     assert.ok(row);
     return row;
@@ -44,7 +44,7 @@ async function setup() {
 describe('payments', () => {
   it('approving a plan starts a fresh month on it', async () => {
     const { db, plan, pay, storeNow } = await setup();
-    const payment = await pay({ kind: 'plan', planId: plan.id, minutes: 500 });
+    const payment = await pay({ kind: 'plan', planId: plan.id, seconds: 30_000 });
     assert.equal(await approvePayment(db, payment.id, t1), true);
     const store = await storeNow();
     assert.equal(store?.planId, plan.id);
@@ -55,7 +55,7 @@ describe('payments', () => {
   it('approving a plan leaves a store the admin paused paused', async () => {
     const { db, plan, pay, storeNow } = await setup();
     await db.update(schema.stores).set({ status: 'paused' });
-    const payment = await pay({ kind: 'plan', planId: plan.id, minutes: 500 });
+    const payment = await pay({ kind: 'plan', planId: plan.id, seconds: 30_000 });
     assert.equal(await approvePayment(db, payment.id, t1), true);
     const store = await storeNow();
     assert.equal(store?.status, 'paused');
@@ -64,7 +64,7 @@ describe('payments', () => {
 
   it('approving a pack adds its minutes once, however many times it is clicked', async () => {
     const { db, pay, storeNow } = await setup();
-    const payment = await pay({ kind: 'pack', minutes: 10 });
+    const payment = await pay({ kind: 'pack', seconds: 600 });
     assert.equal(await approvePayment(db, payment.id, t1), true);
     assert.equal(await approvePayment(db, payment.id, t1), false);
     assert.equal((await storeNow())?.extraSeconds, 10 + 600);
@@ -72,7 +72,7 @@ describe('payments', () => {
 
   it('a rejected payment grants nothing and cannot be approved later', async () => {
     const { db, pay, storeNow } = await setup();
-    const payment = await pay({ kind: 'pack', minutes: 10 });
+    const payment = await pay({ kind: 'pack', seconds: 600 });
     assert.equal(await rejectPayment(db, payment.id, 'Chek topilmadi', t1), true);
     assert.equal(await approvePayment(db, payment.id, t1), false);
     assert.equal((await storeNow())?.extraSeconds, 10);

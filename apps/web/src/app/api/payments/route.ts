@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       ? (await db.select().from(schema.plans).where(and(eq(schema.plans.id, itemId), eq(schema.plans.isActive, true))))[0]
       : (await db.select().from(schema.packs).where(and(eq(schema.packs.id, itemId), eq(schema.packs.isActive, true))))[0];
   if (!item) return fail(404, 'This plan or pack is no longer offered.');
-  const minutes = 'monthlyMinutes' in item ? item.monthlyMinutes : item.minutes;
+  const seconds = 'monthlySeconds' in item ? item.monthlySeconds : item.seconds;
 
   const [payment] = await db
     .insert(schema.payments)
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       planId: kind === 'plan' ? item.id : null,
       packId: kind === 'pack' ? item.id : null,
       title: item.name,
-      minutes,
+      seconds,
       amountUzs: item.priceUzs,
       receipt: new Uint8Array(await receipt.arrayBuffer()),
       receiptType: receipt.type,

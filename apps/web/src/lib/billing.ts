@@ -1,5 +1,5 @@
 /**
- * Live AI minutes per store: each session reserves its seconds from the store's monthly plan up
+ * Live AI seconds per store: each session reserves its seconds from the store's monthly plan up
  * front (the session cap). The write only lands if usedSeconds is unchanged since it was read,
  * so concurrent visitors cannot overspend a plan.
  */
@@ -37,7 +37,7 @@ export async function chargeStoreSession(db: AuthDb, widgetKey: string, wantSeco
     const { store, plan } = row;
     if (store.status !== 'active') return { ok: false, reason: 'paused' };
     // A plan the admin stopped selling still serves the shops that already paid for it
-    const planLimit = plan ? plan.monthlyMinutes * 60 : 0;
+    const planLimit = plan ? plan.monthlySeconds : 0;
     if (planLimit === 0 && store.extraSeconds === 0) return { ok: false, reason: 'no-plan' };
 
     // A paid month lasts 30 days; only an approved payment (or the admin) starts the next one

@@ -13,7 +13,7 @@ const PRESETS: { value: VideoPreset; label: string; hint: string }[] = [
   { value: 'custom', label: 'O‘z topshirig‘im', hint: 'Nima o‘zgarsin? (inglizcha yaxshiroq)' },
 ];
 const POLL_MS = 8000;
-const STATUS_LABEL = { pending: 'tayyorlanmoqda…', completed: 'tayyor', failed: 'xato — daqiqalar qaytarildi' } as const;
+const STATUS_LABEL = { pending: 'tayyorlanmoqda…', completed: 'tayyor', failed: 'xato — soniyalar qaytarildi' } as const;
 
 export function VideoStudio({ stores, jobs: initialJobs }: Props) {
   const [storeId, setStoreId] = useState(stores[0]?.id ?? '');

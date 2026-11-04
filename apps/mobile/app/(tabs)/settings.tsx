@@ -43,7 +43,7 @@ export default function ProfileTab() {
       },
     ]);
 
-  const leftMinutes = live ? Math.floor(live.secondsLeft / 60) : 0;
+  const leftSeconds = live ? Math.max(0, Math.floor(live.secondsLeft)) : 0;
   const leftShare = live && live.dailySeconds ? live.secondsLeft / live.dailySeconds : 0;
 
   return (
@@ -91,7 +91,7 @@ export default function ProfileTab() {
             <View style={[styles.rowBorder, styles.allowance]}>
               <View style={styles.allowanceHead}>
                 <Text style={styles.rowText}>{t.freeAiLeft}</Text>
-                <Text style={styles.rowText}>{leftMinutes} {t.minutesShort}</Text>
+                <Text style={styles.rowText}>{leftSeconds} {t.secondsShort}</Text>
               </View>
               <View style={styles.bar} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(leftShare * 100) }}>
                 <View style={[styles.barFill, { width: `${Math.round(leftShare * 100)}%` }]} />
