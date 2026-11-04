@@ -11,14 +11,14 @@ export default function VirtualTryOnPillarPage() {
     <div className="vto-seo-root">
       <style>{`
         .vto-seo-root {
-          --ink: #170404;
+          --ink: #0b1726;
           --paper: #fffffc;
-          --muted: #6b5555;
-          --line: #17040418;
-          --accent: #c65a92;
-          --lav: #eae4f7;
-          --wash: #faf7f8;
-          --body: #4a3535;
+          --muted: #5d6877;
+          --line: #0b172618;
+          --accent: #2b62ff;
+          --lav: #e6ecfb;
+          --wash: #f6f8f7;
+          --body: #3b4756;
           font-family: 'Onest', -apple-system, sans-serif;
           background: var(--paper); color: var(--ink);
           letter-spacing: -0.01em; min-height: 100vh;
@@ -87,7 +87,7 @@ export default function VirtualTryOnPillarPage() {
         .vto-seo-root table { width: 100%; border-collapse: collapse; font-size: 14.5px; text-align: left; }
         .vto-seo-root th, .vto-seo-root td { padding: 13px 16px; border-bottom: 0.5px solid var(--line); }
         .vto-seo-root th { font-weight: 500; color: var(--ink); background: var(--wash); }
-        .vto-seo-root .col-ours { background: rgba(198, 90, 146, 0.08); font-weight: 500; color: var(--ink); }
+        .vto-seo-root .col-ours { background: rgba(43, 98, 255, 0.08); font-weight: 500; color: var(--ink); }
 
         .vto-seo-root .cards {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));

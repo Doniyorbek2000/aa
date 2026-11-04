@@ -1,10 +1,10 @@
 /* A12 console: sign-in, admin and store dashboard. Plain CSS scoped under .console. */
 .console {
   --c-paper: #fffffc;
-  --c-ink: #170404;
+  --c-ink: #0b1726;
   --c-body: #4a3b3b;
   --c-muted: #8a7c7c;
-  --c-line: rgba(23, 4, 4, 0.1);
+  --c-line: rgba(11, 23, 38, 0.1);
   --c-wash: #f6f2ef;
   --c-accent: #1f5eff;
   --c-danger: #b42318;

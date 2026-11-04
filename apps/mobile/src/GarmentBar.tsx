@@ -98,7 +98,7 @@ export function GarmentBar({
             <Image source={{ uri }} style={styles.thumbImage} contentFit="cover" transition={150} />
             {uri === selected && (
               <View style={styles.check}>
-                <Ionicons name="checkmark" size={12} color="#140f10" />
+                <Ionicons name="checkmark" size={12} color={p.onInk} />
               </View>
             )}
           </Pressable>

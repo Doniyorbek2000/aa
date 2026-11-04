@@ -20,14 +20,14 @@ export default function MobileExperiencePage() {
     <div className="mobile-page-root">
       <style>{`
         .mobile-page-root {
-          --ink: #170404;
+          --ink: #0b1726;
           --paper: #fffffc;
-          --muted: #6b5555;
-          --line: #17040418;
-          --accent: #c65a92;
-          --lav: #eae4f7;
-          --wash: #faf7f8;
-          --body: #4a3535;
+          --muted: #5d6877;
+          --line: #0b172618;
+          --accent: #2b62ff;
+          --lav: #e6ecfb;
+          --wash: #f6f8f7;
+          --body: #3b4756;
           font-family: 'Onest', -apple-system, sans-serif;
           background: var(--paper); color: var(--ink);
           letter-spacing: -0.01em; min-height: 100vh;
@@ -104,8 +104,8 @@ export default function MobileExperiencePage() {
         }
         .mobile-page-root .phone-shell {
           width: 310px; height: 610px; border-radius: 44px;
-          background: #170404; padding: 11px;
-          box-shadow: 0 36px 90px -20px rgba(74,18,40,0.55);
+          background: #0b1726; padding: 11px;
+          box-shadow: 0 36px 90px -20px rgba(11, 23, 60,0.55);
           display: flex; flex-direction: column; position: relative;
         }
         .mobile-page-root .phone-screen {
@@ -132,7 +132,7 @@ export default function MobileExperiencePage() {
         }
         .mobile-page-root .phone-dock-item {
           aspect-ratio: 1; border-radius: 12px; overflow: hidden;
-          border: 2px solid transparent; cursor: pointer; background: #f1edf6; padding: 0;
+          border: 2px solid transparent; cursor: pointer; background: #edf1f7; padding: 0;
         }
         .mobile-page-root .phone-dock-item.active { border-color: var(--ink); }
         .mobile-page-root .phone-dock-item img { width: 100%; height: 100%; object-fit: cover; }

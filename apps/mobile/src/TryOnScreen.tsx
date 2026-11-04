@@ -222,9 +222,9 @@ export function TryOnScreen({ incomingGarment }: { incomingGarment?: string | nu
               disabled={aiState !== 'signin'}
               accessibilityRole={aiState === 'signin' ? 'button' : 'text'}
             >
-              <Ionicons name={aiState === 'signin' ? 'sparkles' : 'time-outline'} size={16} color="#140f10" />
+              <Ionicons name={aiState === 'signin' ? 'sparkles' : 'time-outline'} size={16} color={p.onInk} />
               <Text style={styles.aiBannerText}>{aiState === 'signin' ? t.liveSignIn : t.liveLimit}</Text>
-              {aiState === 'signin' && <Ionicons name="chevron-forward" size={16} color="#140f10" />}
+              {aiState === 'signin' && <Ionicons name="chevron-forward" size={16} color={p.onInk} />}
             </Pressable>
           )}
           {!isWide && (
@@ -347,7 +347,7 @@ const makeStyles = (p: Palette) =>
       borderRadius: 18,
       backgroundColor: p.accent,
     },
-    aiBannerText: { flexShrink: 1, color: '#140f10', fontSize: 13, lineHeight: 18, fontWeight: '700' },
+    aiBannerText: { flexShrink: 1, color: p.onInk, fontSize: 13, lineHeight: 18, fontWeight: '700' },
     topActions: { flexDirection: 'row', gap: 10 },
     round: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(6,5,3,0.42)', alignItems: 'center', justifyContent: 'center' },
     hint: {

@@ -148,7 +148,7 @@ function drawWarpedGarmentMesh(
   ctx.translate(place.x, place.y);
   ctx.rotate(place.angle);
   if (hdEnhanced) ctx.filter = 'contrast(108%) saturate(108%)';
-  ctx.shadowColor = 'rgba(15, 5, 10, 0.36)';
+  ctx.shadowColor = 'rgba(5, 12, 24, 0.36)';
   ctx.shadowBlur = hdEnhanced ? 28 : 20;
   ctx.shadowOffsetY = 8;
 
@@ -713,9 +713,9 @@ export function LiveTryOnModal({
                     style={{
                       padding: '5px 11px',
                       borderRadius: '999px',
-                      border: isActive ? '1px solid #170404' : '1px solid rgba(23,4,4,0.15)',
-                      background: isActive ? '#170404' : 'rgba(255,255,252,0.85)',
-                      color: isActive ? '#fffffc' : '#170404',
+                      border: isActive ? '1px solid #0b1726' : '1px solid rgba(11, 23, 38,0.15)',
+                      background: isActive ? '#0b1726' : 'rgba(255,255,252,0.85)',
+                      color: isActive ? '#fffffc' : '#0b1726',
                       fontSize: '11.5px',
                       fontWeight: 500,
                       cursor: 'pointer',
@@ -738,7 +738,7 @@ export function LiveTryOnModal({
                   id="leffa-garment-type"
                   value={garmentType}
                   onChange={(event) => setGarmentType(event.target.value as LeffaGarmentType)}
-                  style={{ padding: '5px 8px', borderRadius: '8px', border: '1px solid rgba(23,4,4,0.2)', background: '#fff', color: '#170404', font: 'inherit' }}
+                  style={{ padding: '5px 8px', borderRadius: '8px', border: '1px solid rgba(11, 23, 38,0.2)', background: '#fff', color: '#0b1726', font: 'inherit' }}
                 >
                   <option value="upper_body">{t.garmentTops}</option>
                   <option value="lower_body">{t.garmentBottoms}</option>
@@ -758,9 +758,9 @@ export function LiveTryOnModal({
                 style={{
                   padding: '5px 11px',
                   borderRadius: '999px',
-                  border: '1px dashed rgba(23,4,4,0.3)',
-                  background: '#faf7f8',
-                  color: '#170404',
+                  border: '1px dashed rgba(11, 23, 38,0.3)',
+                  background: '#f6f8f7',
+                  color: '#0b1726',
                   fontSize: '11.5px',
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -873,9 +873,9 @@ export function LiveTryOnModal({
                 margin: '10px auto 0',
                 padding: '7px 14px',
                 borderRadius: '999px',
-                border: '1px solid rgba(23,4,4,0.2)',
+                border: '1px solid rgba(11, 23, 38,0.2)',
                 background: '#fffffc',
-                color: '#170404',
+                color: '#0b1726',
                 fontSize: '12.5px',
                 fontWeight: 500,
                 cursor: 'pointer',

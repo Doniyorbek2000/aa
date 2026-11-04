@@ -1,16 +1,16 @@
 :root {
-  --ink: #170404;
+  --ink: #0b1726;
   --paper: #fffffc;
-  --muted: #a49595;
-  --muted-aa: #6b5555;
-  --line: #17040418;
-  --accent: #c65a92;
-  --lav: #eae4f7;
-  --pink: #fec6ff;
-  --pink-lt: #fedfff;
-  --wash: #faf7f8;
-  --body: #4a3535;
-  --placeholder-bg: #f4f1f3;
+  --muted: #8a94a3;
+  --muted-aa: #5d6877;
+  --line: #0b172618;
+  --accent: #2b62ff;
+  --lav: #e6ecfb;
+  --pink: #c9f2ec;
+  --pink-lt: #e3f7f4;
+  --wash: #f6f8f7;
+  --body: #3b4756;
+  --placeholder-bg: #f1f4f3;
 }
 
 * {
@@ -106,7 +106,7 @@ body {
   appearance: none;
 }
 .btn-secondary:hover {
-  background: #f7f2f4;
+  background: #eef2f1;
 }
 .btn:focus-visible {
   outline: 2px solid var(--accent);
@@ -157,7 +157,7 @@ body {
 .tryon-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(24, 8, 14, 0.55);
+  background: rgba(5, 12, 24, 0.55);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   opacity: 0;
@@ -168,11 +168,11 @@ body {
 }
 
 .tryon-dialog {
-  --t-ink: #170404;
-  --t-muted: #a49595;
-  --t-line: rgba(23, 4, 4, 0.1);
+  --t-ink: #0b1726;
+  --t-muted: #8a94a3;
+  --t-line: rgba(11, 23, 38, 0.1);
   --t-card: #fffffc;
-  --t-thumb: #f1edf6;
+  --t-thumb: #edf1f7;
   --t-stage: #181818;
   position: relative;
   width: min(912px, 100%);
@@ -181,7 +181,7 @@ body {
   color: var(--t-ink);
   border: 1px solid var(--t-line);
   border-radius: 30px;
-  box-shadow: 0 40px 120px rgba(40, 10, 25, 0.45);
+  box-shadow: 0 40px 120px rgba(5, 15, 30, 0.45);
   display: flex;
   flex-direction: column;
   padding: 28px 34px 34px 33px;
@@ -204,7 +204,7 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 1px solid rgba(23, 4, 4, 0.22);
+  border: 1px solid rgba(11, 23, 38, 0.22);
   background: transparent;
   color: var(--t-ink);
   font-size: 17px;
@@ -216,7 +216,7 @@ body {
   transition: background 0.15s, border-color 0.15s;
 }
 .tryon-close:hover {
-  background: rgba(23, 4, 4, 0.05);
+  background: rgba(11, 23, 38, 0.05);
   border-color: var(--t-ink);
 }
 
@@ -233,7 +233,7 @@ body {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(23, 4, 4, 0.16);
+  background: rgba(11, 23, 38, 0.16);
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease, border-radius 0.4s ease;
 }
 .tryon-dots .d.active {
@@ -318,7 +318,7 @@ body {
   gap: 8px;
   align-items: center;
   background: transparent;
-  border: 1px solid rgba(23, 4, 4, 0.16);
+  border: 1px solid rgba(11, 23, 38, 0.16);
   border-radius: 999px;
   padding: 8px 15px;
   margin-bottom: 16px;
@@ -380,11 +380,11 @@ body {
 }
 .g-thumb.selected-garment {
   border-color: var(--t-ink);
-  box-shadow: 0 0 0 2px var(--t-ink), 0 10px 24px rgba(40, 10, 25, 0.18);
+  box-shadow: 0 0 0 2px var(--t-ink), 0 10px 24px rgba(5, 15, 30, 0.18);
 }
 .g-thumb:hover {
-  border-color: rgba(23, 4, 4, 0.32);
-  box-shadow: 0 10px 24px rgba(40, 10, 25, 0.14);
+  border-color: rgba(11, 23, 38, 0.32);
+  box-shadow: 0 10px 24px rgba(5, 15, 30, 0.14);
 }
 .g-thumb:active {
   cursor: grabbing;
@@ -492,7 +492,7 @@ body {
   overflow: hidden;
   margin-bottom: 22px;
   border: 1px solid var(--t-line);
-  box-shadow: 0 16px 40px rgba(40, 10, 25, 0.16);
+  box-shadow: 0 16px 40px rgba(5, 15, 30, 0.16);
   background: var(--t-stage);
 }
 .t-demo-vid {
